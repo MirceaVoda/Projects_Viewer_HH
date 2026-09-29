@@ -1,0 +1,23 @@
+{
+  "name": "projects-viewer-hh",
+  "version": "1.0.0",
+  "description": "Project Portfolio Viewer with Vercel Web Analytics",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MirceaVoda/Projects_Viewer_HH.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MirceaVoda/Projects_Viewer_HH/issues"
+  },
+  "homepage": "https://github.com/MirceaVoda/Projects_Viewer_HH#readme",
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  }
+}
