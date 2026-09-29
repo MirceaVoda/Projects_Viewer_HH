@@ -127,6 +127,69 @@ svg .warnt{fill:var(--warning);font-weight:700}
 .xdrop button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;background:none;border:0;border-radius:7px;padding:8px 10px;cursor:pointer}
 .xdrop button:hover{background:var(--accent-soft)}
 .xdrop button span{color:var(--text-muted);font-size:12px}
+/* ---------- print modal ---------- */
+.modal-scrim{position:fixed;inset:0;background:rgba(3,8,20,.6);z-index:80;display:none}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(640px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow:auto;background:var(--page);border:1px solid var(--border-strong);border-radius:12px;z-index:81;padding:18px 20px;display:none;box-shadow:0 16px 48px rgba(0,0,0,.6)}
+.modal h2{margin:0 0 4px;font-size:18px}
+.modal .row2{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin:12px 0}
+.modal .row2 label{display:flex;align-items:center;gap:8px;background:var(--surface-1);border:1px solid var(--border);border-radius:7px;padding:7px 10px;cursor:pointer;font-size:13px}
+.modal .fld{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0}
+.modal .fld label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--text-muted)}
+.modal .fld input,.modal .fld select{background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:6px 8px;min-width:120px}
+.modal .fld input[type=text]{min-width:300px}
+.modal .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+@media (max-width:600px){.modal .row2{grid-template-columns:1fr}.modal .fld input[type=text]{min-width:200px}}
+
+/* ---------- print (white A4 landscape) ---------- */
+#printRoot{display:none}
+@media print{
+  html,body{background:#fff!important}
+  body.printing > *:not(#printRoot):not(style):not(script){display:none!important}
+  body.printing #printRoot{display:block}
+}
+#printRoot{
+  color-scheme:light;
+  --page:#fff; --surface-1:#fff; --surface-2:#f3f6fb; --surface-3:#e6edf7;
+  --border:#d5deea; --border-strong:#b9c6d8;
+  --text-primary:#0b1b33; --text-secondary:#34445e; --text-muted:#66758e;
+  --grid:#e3e8f0; --axis:#9aa9bf; --accent:#1c5cab; --accent-soft:#e3edfa;
+  --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a; --neg:#d03b3b; --pos:#2a78d6; --warning:#c98500;
+  background:#fff; color:var(--text-primary); font-size:11px;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+#printRoot .btn,#printRoot .filters,#printRoot [data-optsel],#printRoot .scr{display:none!important}
+#printRoot .seg{border:0;background:none;padding:0}
+#printRoot .seg button:not(.on){display:none}
+#printRoot .seg button.on{background:var(--accent-soft);color:var(--accent);font-size:10px;padding:2px 8px;font-weight:600}
+#printRoot .vhead{margin:0 0 8px}
+#printRoot .vhead h2{font-size:16px;color:var(--accent)}
+#printRoot .vhead p{font-size:10.5px;max-width:none}
+#printRoot .card{border-color:var(--border);padding:10px 12px;margin-bottom:10px;break-inside:avoid}
+#printRoot .card:has(table.t){break-inside:auto}
+#printRoot .card h3{font-size:12px}
+#printRoot .kpis{grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+#printRoot .kpi{padding:8px 10px;break-inside:avoid}
+#printRoot .kpi .v{font-size:17px}
+#printRoot .tbl-wrap{max-height:none;overflow:visible;border-color:var(--border)}
+#printRoot table.t{font-size:9.5px}
+#printRoot table.t th{position:static;background:#eaf0f8;color:#1c3a66;padding:5px 6px}
+#printRoot table.t td{padding:4px 6px}
+#printRoot table.t td.wrap{min-width:0;max-width:none}
+#printRoot tr{break-inside:avoid}
+#printRoot thead{display:table-header-group}
+#printRoot .psec{break-before:page}
+#printRoot .grid2{gap:10px}
+#printRoot .warnnote{background:#fff7e0;border-color:#f0d58a}
+#printRoot svg text{font-size:11px}
+#printRoot .cover{padding:30px 10px 0}
+#printRoot .cover .brand{color:var(--accent);font-weight:700;letter-spacing:1px;font-size:12px}
+#printRoot .cover h1{font-size:30px;margin:10px 0 6px;color:var(--text-primary)}
+#printRoot .cover .meta{color:var(--text-secondary);font-size:12px;line-height:1.7}
+#printRoot .cover .toc{columns:2;margin-top:18px;font-size:12px;line-height:1.8;padding-left:18px}
+#printRoot .cover .conf{margin-top:24px;color:var(--text-muted);font-size:10.5px;border-top:1px solid var(--border);padding-top:8px}
+#printRoot .vhdr{border-bottom:2px solid var(--accent);padding-bottom:6px;margin-bottom:10px}
+#printRoot .vhdr b{color:var(--accent);font-size:12px}
+#printRoot .vhdr div{color:var(--text-muted);font-size:10px}
 /* ---------- drawer ---------- */
 .scrim{position:fixed;inset:0;background:rgba(3,8,20,.55);z-index:40;display:none}
 .drawer{position:fixed;top:0;right:0;bottom:0;width:min(860px,100vw);background:var(--page);border-left:1px solid var(--border-strong);z-index:41;transform:translateX(100%);transition:transform .22s ease;overflow:auto;padding:18px 22px 40px}
@@ -167,6 +230,13 @@ svg .warnt{fill:var(--warning);font-weight:700}
   <h1>▦ Project Portfolio Viewer</h1>
   <div class="src" id="srcInfo">No file loaded</div>
   <select id="mnav" style="display:none;background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:6px"></select>
+  <div class="xmenu" id="pmenu">
+    <button class="btn" id="btnPrint" disabled>🖨 Print / PDF ▾</button>
+    <div class="xdrop" id="pdrop">
+      <button data-print="pack"><b>Management pack…</b><span>multi-page report: choose the sections</span></button>
+      <button data-print="view"><b>Current view</b><span id="pViewLbl">what is on screen, on white pages</span></button>
+    </div>
+  </div>
   <div class="xmenu" id="xmenu">
     <button class="btn" id="btnExport" disabled>⬇ Export to Excel ▾</button>
     <div class="xdrop" id="xdrop">
@@ -188,6 +258,10 @@ svg .warnt{fill:var(--warning);font-weight:700}
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer"></aside>
 <div class="toast" id="toast"></div>
+<div class="modal-scrim" id="pmodalScrim"></div>
+<div class="modal" id="pmodal"></div>
+<div id="printRoot"></div>
+<style id="pageStyle"></style>
 
 <script>
 /* =====================================================================
@@ -781,7 +855,7 @@ function rankView({id,title,desc,ctl='',metric,dir=-1,fmt=money,diverging=false,
   const top=topN(rows,metric,dir);
   const items=top.map(p=>({label:p.name+(S.dataset==='lines'?` · ${p.bu.replace(/ BU$/,'')}`:''),warn:!!p.etcGap,value:metric(p),id:keyOf(p),color:colorFn?colorFn(p):null,tip:projTip(p,tipExtra?tipExtra(p):[])}));
   const nWarn=top.filter(p=>p.etcGap).length;
-  if(nWarn) chartExtra+=`<div class="warnnote">⚠ ${nWarn} of these projects have ETC = 0 although they are not completed, so their EAC margin is probably overstated. Hover the ⚠ for details, or use <b>Data check</b> to exclude them.${xlsxBtn}</div>`;
+  if(nWarn) chartExtra+=`<div class="warnnote">⚠ ${nWarn} of these projects have ETC = 0 although they are not completed, so their EAC margin is probably overstated. <span class="scr">Hover the ⚠ for details, or use <b>Data check</b> to exclude them.</span>${xlsxBtn}</div>`;
   return vhead(title,desc,ctl)+searchNote()+above+
     `<div class="card"><h3>${S.topN?`Top ${Math.min(S.topN,top.length)}`:'All'}<small>${rows.length} in selection</small></h3>${chartExtra}${hbar(items,{fmt,diverging})}</div>`+
     `<div class="card"><h3>Details <button class="btn small" style="float:right" data-csv="${id}">⬇ Excel</button></h3>${table(id,top,cols,{defSort:null})}</div>`;
@@ -841,8 +915,8 @@ function renderOverview(){
   const delayed=rows.filter(p=>/delay|risk|hold/i.test(p.sched)).length, over=rows.filter(p=>/over/i.test(p.costSt)).length;
   const openD=S.decisions.filter(d=>!/closed|resolved|done/i.test(d.status)&&rows.some(p=>p.id===d.id)).length;
   const k=(l,v,s)=>`<div class="kpi"><div class="l">${l}</div><div class="v num">${v}</div><div class="s">${s||''}</div></div>`;
-  let h=vhead('Portfolio overview',`${rows.length} ${S.dataset==='lines'?'BU project lines':'projects'} in the current selection. Click any bar or row to open the project detail.`);
-  h+=`<div class="kpis">${k('Total contract',money(tc),`VO ${money(sumArr(rows,p=>p.vo))}`)}${k('EAC margin',money(tc-eac),`${pctF(em)} vs contract ${pctF(cm)}`)}${k('Margin erosion',pp((cm-em)*100),money(eac-cc)+' cost growth')}${k('Backlog (Revenue ETC)',money(sumArr(rows,p=>p.revEtc)),`Actual revenue ${money(sumArr(rows,p=>p.actRev))}`)}${k(`${BASE_YEAR} revenue fcst`,money(sumArr(rows,p=>p.rev.yt[0])),`${BASE_YEAR+1}: ${money(sumArr(rows,p=>p.rev.yt[1]))}`)}${k('Schedule issues',delayed,'Delayed / At Risk / On Hold')}${k('Over budget',over,'Cost status')}${k('Open decisions / issues',openD,'from the Decisions sheet')}<div class="kpi" style="cursor:pointer;border-color:rgba(250,178,25,.45)" id="dqKpi"><div class="l">⚠ ETC = 0, not completed</div><div class="v num" style="color:var(--warning)">${rows.filter(p=>p.etcGap).length}</div><div class="s">EAC margin likely overstated · click to list</div><button class="btn small" data-xlsx="flagged" style="margin-top:6px">⬇ Export to Excel</button></div></div>`;
+  let h=vhead('Portfolio overview',`${rows.length} ${S.dataset==='lines'?'BU project lines':'projects'} in the current selection. <span class="scr">Click any bar or row to open the project detail.</span>`);
+  h+=`<div class="kpis">${k('Total contract',money(tc),`VO ${money(sumArr(rows,p=>p.vo))}`)}${k('EAC margin',money(tc-eac),`${pctF(em)} vs contract ${pctF(cm)}`)}${k('Margin erosion',pp((cm-em)*100),money(eac-cc)+' cost growth')}${k('Backlog (Revenue ETC)',money(sumArr(rows,p=>p.revEtc)),`Actual revenue ${money(sumArr(rows,p=>p.actRev))}`)}${k(`${BASE_YEAR} revenue fcst`,money(sumArr(rows,p=>p.rev.yt[0])),`${BASE_YEAR+1}: ${money(sumArr(rows,p=>p.rev.yt[1]))}`)}${k('Schedule issues',delayed,'Delayed / At Risk / On Hold')}${k('Over budget',over,'Cost status')}${k('Open decisions / issues',openD,'from the Decisions sheet')}<div class="kpi" style="cursor:pointer;border-color:rgba(250,178,25,.45)" id="dqKpi"><div class="l">⚠ ETC = 0, not completed</div><div class="v num" style="color:var(--warning)">${rows.filter(p=>p.etcGap).length}</div><div class="s">EAC margin likely overstated <span class="scr">· click to list</span></div><button class="btn small" data-xlsx="flagged" style="margin-top:6px">⬇ Export to Excel</button></div></div>`;
   const rev=sumSeries(rows,'rev'), cost=sumSeries(rows,'cost'), cin=sumSeries(rows,'cin'), cout=sumSeries(rows,'cout');
   const net=cin.map((v,i)=>v-cout[i]); let c=0; const cum=net.map(v=>c+=v);
   h+=`<div class="card"><h3>Monthly revenue vs cost forecast<small>${BASE_YEAR}–${BASE_YEAR+2}</small></h3>${legend([['Revenue','var(--series-1)',1],['Costs','var(--series-2)',1]])}${monthly([{name:'Revenue',color:'var(--series-1)',values:rev},{name:'Costs',color:'var(--series-2)',values:cost}])}</div>`;
@@ -945,7 +1019,7 @@ function renderDecisions(){
   if(S.filters.bu) rows=rows.filter(d=>!d.bu||d.bu===S.filters.bu);
   if(st==='open') rows=rows.filter(d=>!/closed|resolved|done/i.test(d.status));
   const byType={}; rows.forEach(d=>byType[d.type]=(byType[d.type]||0)+1);
-  return vhead('Decisions, critical issues & escalations',`From the "Decisions" sheet: ${S.decisions.length} items in total. Click a row to open the project.`,seg('dSt',[['open','Open only'],['all','All']],'open'))+
+  return vhead('Decisions, critical issues & escalations',`From the "Decisions" sheet: ${S.decisions.length} items in total. <span class="scr">Click a row to open the project.</span>`,seg('dSt',[['open','Open only'],['all','All']],'open'))+
     `<div class="kpis">${Object.entries(byType).map(([t,n])=>`<div class="kpi"><div class="l">${statusChip(t,'type')}</div><div class="v num">${n}</div></div>`).join('')||'<div class="note">No items.</div>'}</div>`+
     `<div class="card"><h3>Items <button class="btn small" style="float:right" data-csv="dec">⬇ Excel</button></h3>${table('dec',rows,[
       {k:'no',label:'#',get:d=>+d.no||d.no,r:1},{k:'proj',label:'Project',get:d=>d.proj,cls:'name'},{k:'type',label:'Type',get:d=>d.type,html:d=>statusChip(d.type,'type')},
@@ -973,7 +1047,7 @@ function renderGroups(){
   const items=top.map(g=>({label:g.name,value:mf(g),id:'',tip:`<div class="h">${esc(g.name)}</div>`+tipRows([['Projects',g.n],['Contract',money(g.tc)],['EAC margin',`${money(g.emVal)} (${pctF(g.em)})`],['Erosion',money(g.ero)],['Backlog',money(g.revEtc)],['Schedule issues',g.issues],['Over budget',g.over]])+'<div class="note">Click to filter by this '+dim.toUpperCase()+'</div>',group:g.name}));
   const chart=hbar(items,{fmt:mfmt,labelW:220,diverging:met==='emVal'||met==='em'});
   const note=dim==='client'?'':'<p class="note">For BU and PM, values come from the BU-line sheet. On multi-PM lines the values are split equally between the PMs.</p>';
-  return vhead('Rankings by PM / BU / Client','Aggregated view. Click a bar or row to filter the whole app to that group.',seg('gDim',[['pm','PM'],['bu','BU'],['client','Client']],'pm')+
+  return vhead('Rankings by PM / BU / Client','Aggregated view. <span class="scr">Click a bar or row to filter the whole app to that group.</span>',seg('gDim',[['pm','PM'],['bu','BU'],['client','Client']],'pm')+
     `<select data-optsel="gMet" style="background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:6px">${Object.entries(M).map(([k,[l]])=>`<option value="${k}" ${k===met?'selected':''}>${esc(l)}</option>`).join('')}</select>`)+
     `<div class="card"><h3>By ${dim.toUpperCase()} — ${esc(ml)}</h3>${note}${chart}</div>`+
     `<div class="card"><h3>Table <button class="btn small" style="float:right" data-csv="grp">⬇ Excel</button></h3>${table('grp',top,[
@@ -989,7 +1063,7 @@ function renderBudget(){
   const tab=opt('bTab','cat');
   const ctl=seg('bTab',[['cat','Cost by category'],['spend','Spend vs progress'],['roll','By BU / PM']],'cat');
   const nFlag=filtered().filter(p=>p.etcGap).length;
-  const flagNote=nFlag?`<div class="warnnote">⚠ ${nFlag} projects in the selection have ETC = 0 although they are not completed. Their EAC looks lower than it really is, which understates overruns. Use <b>Data check → Exclude</b> for a clean comparison.${xlsxBtn}</div>`:'';
+  const flagNote=nFlag?`<div class="warnnote">⚠ ${nFlag} projects in the selection have ETC = 0 although they are not completed. Their EAC looks lower than it really is, which understates overruns. <span class="scr">Use <b>Data check → Exclude</b> for a clean comparison.</span>${xlsxBtn}</div>`:'';
   if(tab==='cat') return budgetCat(ctl,flagNote);
   if(tab==='spend') return budgetSpend(ctl,flagNote);
   return budgetRoll(ctl,flagNote);
@@ -1012,7 +1086,7 @@ function budgetCat(ctl,flagNote){
   let list=S.filters.q?rows:rows.filter(p=>mf(p)!=null&&(B(p)>0||A(p)>0)); if(met==='act'&&!S.filters.q) list=list.filter(p=>A(p)>B(p));
   const top=topN(list,mf);
   const catName=cat==='tot'?'Total cost':CATS.find(c=>c[0]===cat)[1];
-  h+=vhead(`Projects ranked by ${mdesc}`,`Category: ${catName}. Hover a row for its budget / actual / ETC split, or click it for full details.`,
+  h+=vhead(`Projects ranked by ${mdesc}`,`Category: ${catName}. <span class="scr">Hover a row for its budget / actual / ETC split, or click it for full details.</span>`,
     seg('bCat',[['tot','Total'],...CATS.map(([k,l])=>[k,l])],'tot')+seg('bMet',[['pct','% spent'],['eac','EAC overrun'],['act','Actual > budget']],'pct'));
   const items=top.map(p=>({label:p.name+(S.dataset==='lines'?` · ${p.bu.replace(/ BU$/,'')}`:''),warn:!!p.etcGap,budget:B(p),actual:A(p),etc:E(p),id:keyOf(p),
     tip:budTip(p.name,B(p),A(p),E(p),[['Ranking value',mfmt(mf(p))]])+(p.etcGap?`<div style="margin-top:5px;color:var(--warning)">⚠ ${esc(p.etcGap)}</div>`:'')}));
@@ -1104,6 +1178,103 @@ function exportFlagged(){
   toast(`Exported ${nP} projects${S.lines.length?` and ${nL} BU lines`:''} to Excel`);
 }
 const xlsxBtn=`<button class="btn small" data-xlsx="flagged" style="margin-left:8px">⬇ Export flagged to Excel</button>`;
+
+/* ---------- print / PDF ---------- */
+const longDate=d=>d?`${pad2(d.getDate())} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`:'';
+function filterSummary(){
+  const L={q:'Search',bu:'BU',pm:'PM',client:'Client',sched:'Schedule',cost:'Cost',dq:'Data check'};
+  const f=Object.entries(S.filters).filter(([,v])=>v).map(([k,v])=>`${L[k]||k}: ${k==='dq'?(v==='flag'?'only ⚠ ETC = 0':'excluding ⚠ ETC = 0'):v}`);
+  return f.length?f.join(' · '):'none (all projects)';
+}
+const PACK=[
+  ['summary','Executive summary',()=>sec('overview',{}),1],
+  ['contract','Top contract value',()=>sec('contract',{cBasis:'tc'}),1],
+  ['revenue',()=>`Top revenue (${BASE_YEAR} forecast)`,()=>sec('revenue',{rBasis:'y0'}),0],
+  ['margin','Top margin',()=>sec('margin',{mBasis:'val',mDir:'top'}),1],
+  ['lowmargin','Lowest margin %',()=>sec('margin',{mBasis:'pct',mDir:'bot'}),0],
+  ['erosion','Margin erosion',()=>sec('erosion',{eBasis:'pp'}),1],
+  ['risk','Top risks',()=>sec('risk',{kBasis:'exp'}),1],
+  ['budget','Actual vs budget',()=>sec('budget',{bTab:'cat',bCat:'tot',bMet:'eac'}),1],
+  ['spend','Spend vs progress',()=>sec('budget',{bTab:'spend',sMet:'time'}),0],
+  ['cash','Backlog & cash',()=>sec('cash',{cashB:'backlog'}),1],
+  ['schedule','Schedule: slip & delayed projects',()=>sec('schedule',{sB:'slip'})+'<div style="height:10px"></div>'+sec('schedule',{sB:'issues'}),1],
+  ['bu','Results by BU',()=>sec('groups',{gDim:'bu',gMet:'tc'}),0],
+  ['pm','Results by PM',()=>sec('groups',{gDim:'pm',gMet:'emVal'}),0],
+  ['decisions','Open decisions & critical issues',()=>sec('decisions',{dSt:'open'}),1],
+  ['flagged','⚠ Data check: ETC = 0 projects',flaggedSection,1],
+];
+const packLabel=x=>typeof x[1]==='function'?x[1]():x[1];
+let PRINT_TOPN=10;
+function sec(viewId,opts){
+  const save={view:S.view,opts:S.opts,topN:S.topN};
+  S.view=viewId; S.opts=Object.assign({},opts); if(PRINT_TOPN!=null) S.topN=PRINT_TOPN;
+  const v=VIEWS.find(x=>x.id===viewId); let h='';
+  try{h=v.render();}finally{S.view=save.view;S.opts=save.opts;S.topN=save.topN;}
+  return h;
+}
+function flaggedSection(){
+  const keep=S.filters.dq; S.filters.dq='';
+  const rows=filtered().filter(p=>p.etcGap).sort((a,b)=>b.tc-a.tc); S.filters.dq=keep;
+  return vhead('⚠ Data check: ETC = 0 projects',`${rows.length} ${S.dataset==='lines'?'BU lines':'projects'} have no remaining cost (ETC) entered although they are not completed, so their EAC margin is probably overstated. PMs should update ETC before the next report.`)+
+    `<div class="card">${table('pflag',rows,[C.name,C.bu,C.pm,C.sched,C.tc,C.ccost,{k:'act',label:'Actual cost',get:p=>p.actTot,fmt:money,r:1},C.eac,C.em,C.revEtc,
+      {k:'why',label:'Reason',get:p=>p.etcGap.replace(/^ETC = 0 but project not completed: /,''),cls:'wrap'}],{defSort:'tc'})}</div>`;
+}
+function setPageStyle(title){
+  const q=v=>'"'+String(v).replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"';
+  const brand=S.title||'Company Finance Report';
+  document.getElementById('pageStyle').textContent=`@media print{@page{size:A4 landscape;margin:15mm 10mm 14mm 10mm;
+    @top-left{content:${q(brand+' — '+title)};font:600 8.5px system-ui,sans-serif;color:#1c5cab}
+    @top-right{content:${q('Report date '+longDate(S.reportDate)+'  ·  Filters: '+filterSummary())};font:8px system-ui,sans-serif;color:#66758e}
+    @bottom-left{content:"Confidential — internal management use";font:8px system-ui,sans-serif;color:#66758e}
+    @bottom-right{content:"Page " counter(page) " / " counter(pages);font:8px system-ui,sans-serif;color:#66758e}}}`;
+}
+function doPrint(html,title){
+  const root=document.getElementById('printRoot');
+  root.innerHTML=html; setPageStyle(title);
+  render(); // restore the on-screen registries
+  document.body.classList.add('printing');
+  const done=()=>{document.body.classList.remove('printing');root.innerHTML='';removeEventListener('afterprint',done);};
+  addEventListener('afterprint',done);
+  setTimeout(()=>window.print(),60);
+}
+function printView(){
+  const v=VIEWS.find(x=>x.id===S.view)||{label:''};
+  PRINT_TOPN=null; const body=sec(S.view,S.opts); PRINT_TOPN=10;
+  const hdr=`<div class="vhdr"><b>${esc(S.title||'Company Finance Report')}</b><div>${esc(v.label)} · report date ${esc(longDate(S.reportDate))} · ${S.dataset==='lines'?'BU lines':'projects'} · filters: ${esc(filterSummary())} · printed ${esc(longDate(new Date()))}</div></div>`;
+  doPrint(hdr+body,v.label);
+}
+let PACK_SEL=null; try{PACK_SEL=JSON.parse(localStorage.getItem('ppv_pack')||'null');}catch(e){}
+function openPackModal(){
+  const sel=PACK_SEL||{secs:PACK.filter(x=>x[3]).map(x=>x[0]),topN:10,title:'Portfolio Management Report'};
+  const m=document.getElementById('pmodal');
+  m.innerHTML=`<h2>🖨 Management pack</h2><div class="note">Builds a white A4 landscape report with a cover page and one section per page. It uses the current dataset (${S.dataset==='lines'?'BU lines':'projects'}) and filters: ${esc(filterSummary())}.</div>
+    <div class="fld"><label>Report title<input type="text" id="pkTitle" value="${esc(sel.title)}"></label>
+      <label>Rows per ranking<select id="pkTop">${[5,10,15,20].map(n=>`<option ${n===sel.topN?'selected':''}>${n}</option>`).join('')}</select></label></div>
+    <div style="display:flex;gap:8px;align-items:center"><b style="font-size:13px">Sections</b><button class="btn small" id="pkAll">All</button><button class="btn small" id="pkNone">None</button></div>
+    <div class="row2">${PACK.map(x=>`<label><input type="checkbox" data-pk="${x[0]}" ${sel.secs.includes(x[0])?'checked':''}>${esc(packLabel(x))}</label>`).join('')}</div>
+    <div class="note">In the print dialog choose <b>Save as PDF</b> (or <b>Microsoft Print to PDF</b>). Landscape is preset. Under More settings, turn off the browser's own <b>Headers and footers</b>; the report prints its own.</div>
+    <div class="acts"><button class="btn" id="pkCancel">Cancel</button><button class="btn primary" id="pkGo">🖨 Print / Save as PDF</button></div>`;
+  m.style.display='block'; document.getElementById('pmodalScrim').style.display='block';
+}
+function closePackModal(){document.getElementById('pmodal').style.display='none';document.getElementById('pmodalScrim').style.display='none';}
+function printPack(){
+  const secs=[...document.querySelectorAll('[data-pk]:checked')].map(x=>x.dataset.pk);
+  if(!secs.length){toast('Select at least one section');return;}
+  const title=document.getElementById('pkTitle').value.trim()||'Portfolio Management Report', topN=+document.getElementById('pkTop').value;
+  PACK_SEL={secs,topN,title}; try{localStorage.setItem('ppv_pack',JSON.stringify(PACK_SEL));}catch(e){}
+  closePackModal(); PRINT_TOPN=topN;
+  const chosen=PACK.filter(x=>secs.includes(x[0]));
+  const rows=filtered();
+  let h=`<div class="cover"><div class="brand">${esc(S.title||'Company Finance Report')}</div><h1>${esc(title)}</h1>
+    <div class="meta">Report date: <b>${esc(longDate(S.reportDate))}</b> · Source: ${esc(S.file)}<br>
+    Scope: ${rows.length} ${S.dataset==='lines'?'BU project lines':'projects'} · Total contract ${money(sumArr(rows,p=>p.tc))} · Backlog ${money(sumArr(rows,p=>p.revEtc))}<br>
+    Filters: ${esc(filterSummary())} · Rankings show the top ${topN}<br>Printed: ${esc(longDate(new Date()))}</div>
+    <ol class="toc">${chosen.map(x=>`<li>${esc(packLabel(x))}</li>`).join('')}</ol>
+    <div class="conf">Confidential — internal management use. EAC = forecast cost at completion; ETC = estimated cost to complete. Projects marked ⚠ have ETC = 0 although they are not completed, so their margins are probably overstated.</div></div>`;
+  for(const x of chosen){ try{h+=`<section class="psec">${x[2]()}</section>`;}catch(e){console.error(e);h+=`<section class="psec"><p>Could not render ${esc(packLabel(x))}: ${esc(e.message)}</p></section>`;} }
+  PRINT_TOPN=10;
+  doPrint(h,title);
+}
 
 /* =====================================================================
    7. Drawer (project detail)
@@ -1235,6 +1406,12 @@ document.addEventListener('click',e=>{
     document.getElementById('xAllLbl').textContent=`${filtered(S.projects).length} projects${S.lines.length?`, ${filtered(S.lines).length} BU lines`:''}, decisions — all columns`;return;}
   const ex=t.closest('[data-exp]'); if(ex){document.getElementById('xdrop').classList.remove('open');({view:exportView,flagged:exportFlagged,all:exportAll})[ex.dataset.exp]();return;}
   if(!t.closest('#xmenu')) document.getElementById('xdrop').classList.remove('open');
+  if(t.closest('#btnPrint')){document.getElementById('pdrop').classList.toggle('open');const v=VIEWS.find(x=>x.id===S.view);document.getElementById('pViewLbl').textContent=`“${v?v.label:''}” on white A4 landscape pages`;return;}
+  const pr=t.closest('[data-print]'); if(pr){document.getElementById('pdrop').classList.remove('open'); if(pr.dataset.print==='pack') openPackModal(); else printView(); return;}
+  if(!t.closest('#pmenu')) document.getElementById('pdrop').classList.remove('open');
+  if(t.id==='pkCancel'||t.id==='pmodalScrim'){closePackModal();return;}
+  if(t.id==='pkGo'){printPack();return;}
+  if(t.id==='pkAll'||t.id==='pkNone'){document.querySelectorAll('[data-pk]').forEach(c=>c.checked=t.id==='pkAll');return;}
   if(t.id==='clearF'){sugg.style.display='none';S.filters={q:'',bu:'',pm:'',client:'',sched:'',cost:'',dq:''};render();return;}
   if(t.closest('[data-xlsx]')){exportFlagged();return;}
   if(t.closest('#dqKpi')){S.filters.dq='flag';S.view='margin';toast('Showing only projects flagged ⚠ ETC = 0');render();return;}
@@ -1289,6 +1466,7 @@ async function loadFile(f){
     document.getElementById('srcInfo').textContent=`${f.name} — ${t2||t1} · ${S.projects.length} projects · ${S.lines.length} BU lines · ${S.decisions.length} decisions`;
     document.getElementById('btnLoad').textContent='Load another file…';
     document.getElementById('btnExport').disabled=false;
+    document.getElementById('btnPrint').disabled=false;
     render(); toast('Loaded '+f.name);
   }catch(err){
     console.error(err);
