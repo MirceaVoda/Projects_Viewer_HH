@@ -255,6 +255,16 @@ table.hm tbody tr:hover td:first-child{color:var(--accent)}
 .spark{vertical-align:middle}
 .sevchip{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:600}
 .sevchip.hi{background:rgba(208,59,59,.25);color:#ff9d9d}.sevchip.md{background:rgba(250,178,25,.22);color:#fbc54d}.sevchip.lo{background:rgba(150,180,240,.18);color:var(--text-secondary)}
+
+/* ---------- meeting plan ---------- */
+.mtg-ctl{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
+.mtg-ctl label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--text-muted)}
+.mtg-ctl input[type=number]{width:96px;background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:6px 8px}
+.fhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 8px}
+.fchip{display:inline-flex;gap:5px;align-items:center;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:3px 10px;font-size:12px;color:var(--text-secondary)}
+.fchip b{color:var(--text-primary)} .fchip.bad{border-color:var(--serious);color:#ffb08f} .fchip.ok{border-color:var(--good)}
+.att{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+h4.mh{margin:12px 0 4px;font-size:13px;color:var(--text-secondary)}
 </style>
 </head>
 <body>
@@ -937,6 +947,7 @@ const VIEWS=[
  {id:'butime',ico:'≋',label:'Timeline by BU',render:renderBUTime},
  {id:'conc',ico:'◔',label:'Concentration',render:renderConc},
  {id:'dq',ico:'✔',label:'Data quality',render:renderDQ},
+ {id:'meetings',ico:'☎',label:'Meeting plan',render:renderMeetings},
  {grp:'Settings'},
  {id:'settings',ico:'⚙',label:'Risk weights & settings',render:renderSettings},
 ];
@@ -1345,6 +1356,121 @@ function renderDQ(){
       {defSort:'sevN',openKey:r=>r.p.id+'|'})}</div>`;
 }
 
+/* =====================================================================
+   Meeting plan: BU meetings, inter-BU meeting, management meeting
+   ===================================================================== */
+const CAD={w:{label:'Weekly',pm:4.33},b:{label:'Bi-weekly',pm:2.17},m:{label:'Monthly',pm:1},n:{label:'—',pm:0}};
+const roundUp=(v,step)=>Math.ceil(v/step)*step;
+const isOpenDec=d=>!/closed|resolved|done/i.test(d.status||'');
+function meetingPlan(){
+  const B={bu:+opt('m_bu',60)||60,inter:+opt('m_inter',90)||90,mgmt:+opt('m_mgmt',120)||120,cap:+opt('m_cap',6)||6};
+  const all=S.projects, projs=filtered(S.projects);
+  const pct=(arr,q)=>{const a=arr.filter(v=>v!=null).sort((x,y)=>y-x); return a.length?a[Math.min(a.length-1,Math.floor(a.length*q))]:Infinity;};
+  const riskThr=pct(all.map(p=>p.risk||0),.20), tcThr=pct(all.map(p=>p.tc),.10);
+  const avgRisk=all.length?all.reduce((a,p)=>a+(p.risk||0),0)/all.length:1||1, maxTc=Math.max(1,...all.map(p=>p.tc));
+  const issue=p=>/delay|risk|hold/i.test(p.sched)||/over/i.test(p.costSt);
+  const items=projs.map(p=>{
+    const crit=p.openDecs.some(d=>/critical/i.test(d.type)), iss=issue(p), mr=[], ir=[];
+    if(p.tc>0&&p.em<0) mr.push('Negative EAC margin ('+pctF(p.em)+')');
+    if((p.risk||0)>0&&(p.risk||0)>=riskThr) mr.push('Top-20% risk score ('+(p.risk||0).toFixed(1)+')');
+    if(crit) mr.push('Critical issue open');
+    if(p.tc>=tcThr&&(iss||p.em<0.10)) mr.push('Top-10% contract with issue / thin margin');
+    if(p.slip!=null&&p.slip>60) mr.push('Forecast slip '+p.slip+' days');
+    if(/delay|risk/i.test(p.sched)&&p.tc>0&&p.em<0.05) mr.push('Delayed / at risk with margin < 5%');
+    if(p.bus.length>1){ ir.push('Multi-BU: '+p.bus.join(' + ')); const st=new Set(S.lines.filter(l=>l.id===p.id).map(l=>l.sched).filter(Boolean)); if(st.size>1) ir.push('BUs report different schedule status'); }
+    const level=mr.length?'mgmt':p.bus.length>1?'inter':'bu';
+    const pri=(p.risk||0)/Math.max(avgRisk,1e-9)+0.5*p.openDecs.length+(iss?1:0)+(p.tc>0&&p.em<0?2:0)+(crit?2:0)+p.tc/maxTc;
+    const need=Math.min(25,Math.max(4,Math.round(3+3*pri)));
+    const reasons=level==='mgmt'?mr:level==='inter'?ir:[p.bus[0]?'Single-BU project':'No BU assigned'];
+    if(level!=='bu'&&iss&&!reasons.some(r=>/issue|delay|risk/i.test(r))) reasons.push('Schedule / cost issue ('+(p.sched||'—')+' / '+(p.costSt||'—')+')');
+    return {p,level,forum:level==='bu'?'bu:'+(p.bus[0]||'—'):level,reasons,pri,need,crit,iss};
+  });
+  const byId=new Map(items.map(it=>[it.p.id,it]));
+  const forums={};
+  const mk=(key,label,level,budget)=>forums[key]=forums[key]||{key,label,level,budget,items:[]};
+  mk('mgmt','Management meeting','mgmt',B.mgmt); mk('inter','Inter-BU meeting','inter',B.inter);
+  items.forEach(it=>{ const lvl=it.level==='bu'?'bu':it.level; const F=it.level==='bu'?mk(it.forum,'BU meeting — '+it.forum.slice(3),'bu',B.bu):forums[it.level]; F.items.push(it); });
+  // decisions
+  const decs=S.decisions.filter(isOpenDec).filter(d=>!d.id||byId.has(d.id)||!S.projects.some(p=>p.id===d.id));
+  decs.forEach(d=>{ const it=byId.get(d.id); const critical=/critical/i.test(d.type||''); let key;
+    if(critical||!it) key='mgmt'; else if(it.level==='bu') key='bu:'+(d.bu||it.p.bus[0]||'—'); else key=it.level;
+    if(!it&&S.filters.bu&&d.bu&&d.bu!==S.filters.bu) key=null;
+    d._forum=key; });
+  Object.values(forums).forEach(F=>{
+    F.items.sort((a,b)=>b.pri-a.pri); let used=0;
+    F.items.forEach(it=>{ if(used+it.need<=F.budget||it.crit){it.parked=false;used+=it.need;} else it.parked=true; });
+    F.items.forEach((it,i)=>it.ord=i+1);
+    F.incl=F.items.filter(i=>!i.parked); F.parked=F.items.filter(i=>i.parked);
+    F.needAll=F.items.reduce((a,i)=>a+i.need,0); F.used=used; F.recDur=F.items.length?Math.min(180,Math.max(30,roundUp(F.needAll*1.1,15))):0;
+    F.decs=decs.filter(d=>d._forum===F.key);
+    const n=F.items.length, wi=F.items.filter(i=>i.iss).length, crit=F.items.some(i=>i.crit)||F.decs.some(d=>/critical/i.test(d.type||''));
+    F.cad=!n&&!F.decs.length?CAD.n:F.level==='mgmt'?(crit||n>=8?CAD.w:n>=3?CAD.b:CAD.m):F.level==='inter'?(wi>=5?CAD.w:wi>=2?CAD.b:CAD.m):(crit||wi/n>=.30?CAD.w:wi/n>=.15?CAD.b:CAD.m);
+    F.planned=F.items.length?Math.min(F.budget,F.recDur):0; F.hours=F.cad.pm*F.planned/60;
+    F.fits=F.recDur<=F.budget; F.over=Math.max(0,F.used-F.budget);
+    // attendees
+    const A={}; const add=(name,role)=>{if(!name)return; const a=A[name]||(A[name]={name,n:0,role}); a.n++;};
+    F.incl.forEach(it=>{const p=it.p; const ls=S.lines.filter(l=>l.id===p.id&&(F.level!=='bu'||l.bus.includes(F.key.slice(3))));
+      const pms=F.level==='bu'&&ls.length?[...new Set(ls.flatMap(l=>l.pms))]:p.pms; (pms.length?pms:['(no PM)']).forEach(n=>add(n,'PM')); });
+    F.decs.forEach(d=>{ if(d.to) d.to.split(/[\/,;]/).map(x=>x.trim()).filter(Boolean).forEach(n=>add(n,'Decision owner')); });
+    F.attendees=Object.values(A).sort((a,b)=>b.n-a.n);
+    F.pmCount=A;
+    const bus=F.level==='bu'?[F.key.slice(3)]:[...new Set(F.incl.flatMap(i=>i.p.bus))];
+    F.leads=bus;
+  });
+  // PM load
+  const PM={};
+  Object.values(forums).forEach(F=>{ const per={}; F.incl.forEach(it=>{const p=it.p; const ls=S.lines.filter(l=>l.id===p.id&&(F.level!=='bu'||l.bus.includes(F.key.slice(3))));
+      const pms=F.level==='bu'&&ls.length?[...new Set(ls.flatMap(l=>l.pms))]:p.pms; (pms.length?pms:['(no PM)']).forEach(n=>{const g=PM[n]||(PM[n]={name:n,items:0,min:0,max:0,forums:new Set()}); g.items++; g.min+=it.need*F.cad.pm; g.forums.add(F.label); per[n]=(per[n]||0)+1; g.max=Math.max(g.max,per[n]);}); }); });
+  const pmRows=Object.values(PM).map(g=>({...g,nf:g.forums.size,hrs:g.min/60,over:g.max>B.cap}));
+  const ord=Object.values(forums).sort((a,b)=>({mgmt:0,inter:1,bu:2}[a.level]-{mgmt:0,inter:1,bu:2}[b.level])||a.label.localeCompare(b.label));
+  return {B,forums:ord,items,pmRows,decs,thr:{riskThr,tcThr,avgRisk}};
+}
+function forumCard(F,idx,P){
+  const tid='mgf'+idx; SHEET_NAMES[tid]=F.label.replace('meeting — ','').replace(' meeting','').slice(0,28);
+  const chip=(l,v,c)=>`<span class="fchip ${c||''}">${l} <b>${v}</b></span>`;
+  const head=`<div class="fhead">${chip('Items',F.items.length)}${chip('Cadence',F.cad.label)}${chip('Recommended duration',F.recDur?F.recDur+' min':'—')}${chip('Time budget',F.budget+' min',F.fits?'ok':'bad')}${chip('Agenda time',F.used+' min')}${chip('Hours / month',F.hours.toFixed(1))}${F.parked.length?chip('Parked to next round',F.parked.length,'bad'):''}</div>`;
+  const note=!F.items.length?'<p class="note">No projects route to this forum with the current filters.</p>':!F.fits?`<p class="note">⚠ The agenda needs about ${F.recDur} min but the budget is ${F.budget} min. ${F.parked.length?`${F.parked.length} lower-priority item(s) are parked for the next round; `:''}extend the meeting or meet more often if everything must be covered.</p>`:'';
+  const tbl=F.items.length?table(tid,F.items,[
+    {k:'ord',label:'Order',get:r=>r.ord,r:1},
+    {k:'name',label:'Project',get:r=>r.p.name,cls:'name',html:r=>`<div class="n">${r.p.etcGap?'<span class="warn">⚠</span> ':''}${esc(r.p.name)}${r.parked?' <span class="pill">parked</span>':''}</div><div class="sub">${esc(r.p.id)} · ${esc(r.p.client||'—')}</div>`},
+    {k:'min',label:'Minutes',get:r=>r.parked?0:r.need,r:1},
+    {k:'pri',label:'Priority',get:r=>r.pri,fmt:v=>v.toFixed(1),r:1},
+    {k:'why',label:'Why here',get:r=>r.reasons.join('; '),cls:'wrap'},
+    {k:'pm',label:'PM',get:r=>r.p.pm},{k:'tc',label:'Contract',get:r=>r.p.tc,fmt:money,r:1},{k:'em',label:'EAC margin %',get:r=>r.p.em,fmt:pctF,r:1},
+    {k:'sch',label:'Schedule',get:r=>r.p.sched,html:r=>statusChip(r.p.sched,'sched')},{k:'od',label:'Open decisions',get:r=>r.p.openDecs.length,r:1}],{defSort:'ord',defDir:1,rank:false,openKey:r=>r.p.id+'|'}):'';
+  const att=F.attendees.length?`<h4 class="mh">Suggested attendees</h4><div class="att">${F.leads.map(b=>`<span class="pill" style="background:var(--surface-3)">BU lead — ${esc(b.replace(/ BU$/,''))}</span>`).join('')}${F.attendees.map(a=>`<span class="pill" ${a.role==='PM'?'':'style="outline:1px solid var(--warning)"'}>${esc(a.name)} · ${a.role==='PM'?'PM':'decision owner'} ×${a.n}</span>`).join('')}</div>`:'';
+  const dec=F.decs.length?`<h4 class="mh">Decisions to take (${F.decs.length})</h4><div class="tbl-wrap"><table class="t"><thead><tr><th>Project</th><th>Type</th><th>Assigned to</th><th>Description</th></tr></thead><tbody>${F.decs.map(d=>`<tr ${d.id?`data-open="${esc(d.id+'|')}"`:''}><td class="name"><div class="n">${esc(d.proj||'—')}</div></td><td>${statusChip(d.type,'type')}</td><td>${esc(d.to||'—')}</td><td class="wrap">${esc(d.desc||'')}</td></tr>`).join('')}</tbody></table></div>`:'';
+  return `<div class="card"><h3>${esc(F.label)} <button class="btn small" style="float:right" data-csv="${tid}">⬇ Excel</button></h3>${head}${note}${tbl}${att}${dec}</div>`;
+}
+function renderMeetings(){
+  const P=meetingPlan(), {B,forums}=P;
+  const busSel=uniq(forums.filter(f=>f.level==='bu').map(f=>f.key.slice(3))), selBU=opt('mBU','');
+  const shown=forums.filter(f=>f.level!=='bu'||!selBU||f.key==='bu:'+selBU);
+  const nItems=l=>forums.filter(f=>f.level===l).reduce((a,f)=>a+f.items.length,0);
+  const perMonth=forums.reduce((a,f)=>a+(f.items.length?f.cad.pm:0),0), hrs=forums.reduce((a,f)=>a+f.hours,0);
+  const k=(l,v,s)=>`<div class="kpi"><div class="l">${l}</div><div class="v num">${v}</div><div class="s">${s||''}</div></div>`;
+  const numIn=(key,label,def,step)=>`<label>${label}<input type="number" min="15" step="${step||15}" data-mtg="${key}" value="${opt('m_'+key,def)}"></label>`;
+  // exports
+  EXTRA_SHEETS.push(()=>({name:'Meeting cadence',cols:[{label:'Forum',width:30},{label:'Level',width:10},{label:'Items',width:8,type:'int'},{label:'Agenda items parked',width:10,type:'int'},{label:'Cadence',width:12},{label:'Recommended duration (min)',width:14,type:'int'},{label:'Time budget (min)',width:12,type:'int'},{label:'Hours / month',width:10,type:'dec1'},{label:'Attendees',width:60,type:'wrap'}],
+    rows:forums.map(f=>[f.label,f.level,f.items.length,f.parked.length,f.cad.label,f.recDur,f.budget,f.hours,f.attendees.map(a=>`${a.name} (${a.role})`).join(', ')])}));
+  EXTRA_SHEETS.push(()=>({name:'Meeting decisions',cols:[{label:'Forum',width:30},{label:'Project',width:38,type:'wrap'},{label:'Type',width:14},{label:'Assigned to',width:20},{label:'BU',width:14},{label:'Description',width:70,type:'wrap'}],
+    rows:forums.flatMap(f=>f.decs.map(d=>[f.label,d.proj,d.type,d.to,d.bu,d.desc]))}));
+  const pmCard=`<div class="card"><h3>PM meeting load <button class="btn small" style="float:right" data-csv="mgpm">⬇ Excel</button></h3><p class="note">Agenda items each PM presents across all forums, and the meeting time that implies per month. A PM is flagged when presenting more than ${B.cap} items in one meeting round — consider a consolidated update or a delegate.</p>${table('mgpm',P.pmRows,[
+    {k:'name',label:'PM',get:r=>r.name,html:r=>(r.over?'<span class="warn">⚠</span> ':'')+esc(r.name)},{k:'items',label:'Agenda items',get:r=>r.items,r:1},{k:'nf',label:'Forums',get:r=>r.nf,r:1},{k:'max',label:'Max items / round',get:r=>r.max,r:1},{k:'hrs',label:'Presenting hours / month',get:r=>r.hrs,fmt:v=>v.toFixed(1),r:1},
+    {k:'st',label:'Status',get:r=>r.over?1:0,html:r=>r.over?'<span class="sevchip hi">Overloaded</span>':'<span class="sevchip lo">OK</span>'}],{defSort:'hrs',openKey:r=>'@pm:'+r.name})}</div>`;
+  const rules=`<div class="card"><h3>How the plan is built</h3><div class="note" style="line-height:1.6">
+    <b>Routing</b> (highest level wins). <b>Management:</b> negative EAC margin; risk score in the top 20% of the whole portfolio (≥ ${P.thr.riskThr===Infinity?'—':P.thr.riskThr.toFixed(1)}); a critical issue/decision open; top-10% contract (≥ ${money(P.thr.tcThr)}) with a schedule/cost issue or EAC margin &lt; 10%; forecast slip &gt; 60 days; delayed/at-risk with EAC margin &lt; 5%. <b>Inter-BU:</b> projects involving more than one BU (also when the BU lines report different schedule status). <b>BU meeting:</b> everything else, in the project's BU. Thresholds are measured on the whole portfolio, so routing does not change when you filter.<br>
+    <b>Priority & time:</b> priority = risk score ÷ portfolio average + 0.5 × open decisions + 1 if schedule/cost issue + 2 if negative margin + 2 if critical issue + contract size (0–1). Minutes per project = 3 + 3 × priority, between 4 and 25. Items are added to the agenda in priority order until the time budget is used; the rest are parked to the next round, except projects with a critical issue, which are always kept.<br>
+    <b>Duration:</b> sum of all item minutes + 10%, rounded up to 15 min (30–180). <b>Cadence:</b> Management weekly if a critical issue is open or ≥ 8 items, bi-weekly if ≥ 3, otherwise monthly. Inter-BU weekly with ≥ 5 projects with issues, bi-weekly with ≥ 2, otherwise monthly. BU meeting weekly if a critical issue is open or ≥ 30% of the BU's projects have issues, bi-weekly at ≥ 15%, otherwise monthly.<br>
+    <b>Decisions</b> (open items from the Decisions sheet): critical items and items without a project go to management; others follow their project. <b>BU leads</b> are not in the data, so they appear as roles.</div></div>`;
+  return vhead('Meeting plan','Proposed BU, inter-BU and management meetings built from the data: who and what to discuss, how long, how often and which decisions to take. <span class="scr">Change the time budgets below to re-plan.</span>',
+      busSel.length?`<select data-optsel="mBU" style="background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:6px"><option value="">All BU meetings</option>${busSel.map(b=>`<option ${b===selBU?'selected':''}>${esc(b)}</option>`).join('')}</select>`:'')+
+    `<div class="card"><div class="mtg-ctl">${numIn('bu','BU meeting budget (min)',60)}${numIn('inter','Inter-BU budget (min)',90)}${numIn('mgmt','Management budget (min)',120)}${numIn('cap','Max items per PM / round',6,1)}<span class="note" style="margin:0">Budgets are per meeting.</span></div></div>`+
+    `<div class="kpis">${k('Management items',nItems('mgmt'),'escalated projects')}${k('Inter-BU items',nItems('inter'),'multi-BU projects')}${k('BU-meeting items',nItems('bu'),`${busSel.length} BU meetings`)}${k('Meetings / month',perMonth.toFixed(1),'at the proposed cadence')}${k('Meeting hours / month',hrs.toFixed(1),'forum time, not per person')}${k('PMs overloaded',P.pmRows.filter(r=>r.over).length,`of ${P.pmRows.length}`)}</div>`+
+    `<div class="card"><h3>Recommended cadence & duration</h3><div class="tbl-wrap"><table class="t"><thead><tr><th>Forum</th><th class="r">Items</th><th>Cadence</th><th class="r">Recommended</th><th class="r">Budget</th><th>Fit</th><th class="r">Hours / month</th></tr></thead><tbody>${forums.map(f=>`<tr><td>${esc(f.label)}</td><td class="r num">${f.items.length}</td><td>${f.cad.label}</td><td class="r num">${f.recDur?f.recDur+' min':'—'}</td><td class="r num">${f.budget} min</td><td>${!f.items.length?'—':f.fits?'<span class="sevchip lo">Fits</span>':`<span class="sevchip md">Over by ${f.recDur-f.budget} min</span>`}</td><td class="r num">${f.hours.toFixed(1)}</td></tr>`).join('')}</tbody></table></div></div>`+
+    shown.map((F,i)=>forumCard(F,forums.indexOf(F),P)).join('')+pmCard+rules;
+}
+
 /* ---------- settings ---------- */
 /* ---------- actual vs budget ---------- */
 function renderBudget(){
@@ -1494,6 +1620,7 @@ const PACK=[
   ['butime','Timeline by BU (revenue)',()=>sec('butime',{tMet:'rev'}),0],
   ['conc','Concentration (client backlog)',()=>sec('conc',{xDim:'client',xMet:'revEtc'}),0],
   ['dq','Data quality',()=>sec('dq',{}),0],
+  ['meetings','Meeting plan (BU / inter-BU / management)',()=>sec('meetings',{}),0],
   ['pm','Results by PM',()=>sec('groups',{gDim:'pm',gMet:'emVal'}),0],
   ['decisions','Open decisions & critical issues',()=>sec('decisions',{dSt:'open'}),1],
   ['flagged','⚠ Data check: ETC = 0 projects',flaggedSection,1],
@@ -1688,6 +1815,7 @@ main.addEventListener('change',e=>{
   if(t.dataset.f&&t.dataset.f!=='q'){S.filters[t.dataset.f]=t.value;render();}
   if(t.hasAttribute('data-topn')){S.topN=+t.value;render();}
   if(t.dataset.optsel){S.opts[t.dataset.optsel]=t.value;render();}
+  if(t.dataset.mtg){S.opts['m_'+t.dataset.mtg]=t.value;render();}
 });
 document.addEventListener('click',e=>{
   const t=e.target;
