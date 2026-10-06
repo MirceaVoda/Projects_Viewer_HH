@@ -223,6 +223,38 @@ svg .warnt{fill:var(--warning);font-weight:700}
   header.top{padding:10px 16px}
   #mnav{display:block!important}
 }
+
+/* ---------- project x BU matrix ---------- */
+.mxwrap{overflow:auto;max-height:calc(100vh - 250px);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-1)}
+table.mx{border-collapse:separate;border-spacing:0;font-size:12.5px}
+table.mx th,table.mx td{padding:0;border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+table.mx thead th{position:sticky;top:0;z-index:3;background:#172a4d;color:var(--text-secondary);font-weight:600;padding:8px 6px;text-align:center;white-space:nowrap;min-width:64px;cursor:pointer}
+table.mx thead th:hover{color:var(--text-primary)}
+table.mx thead th.corner{left:0;z-index:5;text-align:left;min-width:300px;max-width:300px;padding-left:10px;cursor:default}
+table.mx td.pn{position:sticky;left:0;z-index:2;background:var(--surface-1);padding:6px 10px;min-width:300px;max-width:300px;cursor:pointer}
+table.mx td.pn .n{font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+table.mx td.pn .sub{color:var(--text-muted);font-size:11px}
+table.mx td.c{text-align:center;height:34px}
+table.mx td.c.on{cursor:pointer}
+table.mx td.c.on i{display:block;width:26px;height:18px;border-radius:5px;margin:0 auto;transition:transform .08s}
+table.mx td.c.on:hover i{transform:scale(1.25);box-shadow:0 0 0 2px var(--text-primary)}
+table.mx td.tot,table.mx th.tot{background:var(--surface-2);text-align:center;padding:6px 8px;font-weight:650;position:sticky;right:0;z-index:2}
+table.mx thead th.tot{z-index:4;cursor:default}
+table.mx tbody tr:hover td.pn,table.mx tbody tr:hover td.c:not(.on){background:rgba(57,135,229,.12)}
+table.mx tfoot td{position:sticky;bottom:0;z-index:3;background:var(--surface-2);font-weight:650;text-align:center;padding:7px 6px;border-top:1px solid var(--border-strong)}
+table.mx tfoot td.pn{left:0;z-index:4;text-align:left}
+
+/* ---------- new insight views ---------- */
+table.hm{border-collapse:collapse;width:100%;font-size:13px}
+table.hm th{background:#172a4d;color:var(--text-secondary);font-weight:600;padding:8px 10px;text-align:right;border-bottom:1px solid var(--border-strong);white-space:nowrap}
+table.hm th:first-child,table.hm td:first-child{text-align:left}
+table.hm td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
+table.hm td:first-child{font-weight:600;cursor:pointer}
+table.hm td.g{background:rgba(12,163,12,.28)} table.hm td.w{background:rgba(250,178,25,.30)} table.hm td.c{background:rgba(208,59,59,.42)}
+table.hm tbody tr:hover td:first-child{color:var(--accent)}
+.spark{vertical-align:middle}
+.sevchip{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:600}
+.sevchip.hi{background:rgba(208,59,59,.25);color:#ff9d9d}.sevchip.md{background:rgba(250,178,25,.22);color:#fbc54d}.sevchip.lo{background:rgba(150,180,240,.18);color:var(--text-secondary)}
 </style>
 </head>
 <body>
@@ -742,7 +774,7 @@ const TABLE_ROWS={};
 /* ---------- Excel export of on-screen tables ---------- */
 const EXTRA_SHEETS=[];
 const SHEET_NAMES={contract:'Contract value',revenue:'Revenue',margin:'Margin',erosion:'Margin erosion',risk:'Risk register',cash:'Backlog & cash',costprog:'Cost & progress',
-  sched:'Schedule',dec:'Decisions',grp:'Groups',bud:'Budget by project',spend:'Spend vs progress',broll:'Budget roll-up'};
+  sched:'Schedule',dec:'Decisions',grp:'Groups',pml:'PM workload',brgbu:'Erosion by BU',butl:'BU yearly totals',conc:'Concentration',dq:'Data quality',bud:'Budget by project',spend:'Spend vs progress',broll:'Budget roll-up'};
 function colType(c,sample){
   if(c.xl) return c.xl; const f=c.fmt;
   if(f===money) return 'eur'; if(f===pctF) return 'pct'; if(f===pp) return 'dec1'; if(f===days) return 'int';
@@ -890,6 +922,7 @@ const VIEWS=[
      colorFn:p=>(b==='pp'?p.eroPP:p.eroVal)>0?'var(--neg)':'var(--pos)',
      chartExtra:legend([['Margin eroded','var(--neg)'],['Margin improved','var(--pos)']]),
      cols:[C.name,C.bu,C.pm,C.tc,C.cm,C.em,C.eroPP,C.eroVal,C.cost,{k:'risks',label:'Risks',get:p=>p.risks.join(' | '),cls:'wrap'}]});}},
+ {id:'bridge',ico:'⇅',label:'Margin bridge',render:renderBridge},
  {id:'risk',ico:'⚠',label:'Risks',render:renderRisk},
  {grp:'Analysis'},
  {id:'cash',ico:'€',label:'Backlog & cash',render:renderCash},
@@ -898,6 +931,12 @@ const VIEWS=[
  {id:'schedule',ico:'◷',label:'Schedule / completion',render:renderSchedule},
  {id:'decisions',ico:'☑',label:'Decisions & issues',render:renderDecisions},
  {id:'groups',ico:'☷',label:'By PM / BU / Client',render:renderGroups},
+ {id:'matrix',ico:'▦',label:'Project × BU matrix',render:renderMatrix},
+ {id:'pmload',ico:'☺',label:'PM workload',render:renderPMLoad},
+ {id:'buheat',ico:'▩',label:'BU health heatmap',render:renderBUHeat},
+ {id:'butime',ico:'≋',label:'Timeline by BU',render:renderBUTime},
+ {id:'conc',ico:'◔',label:'Concentration',render:renderConc},
+ {id:'dq',ico:'✔',label:'Data quality',render:renderDQ},
  {grp:'Settings'},
  {id:'settings',ico:'⚙',label:'Risk weights & settings',render:renderSettings},
 ];
@@ -1057,6 +1096,255 @@ function renderGroups(){
       {defSort:null,openKey:g=>'@'+dim+':'+g.name})}</div>`;
 }
 
+/* ---------- project x BU matrix ---------- */
+function renderMatrix(){
+  const rows=filtered(S.projects).slice().sort((a,b)=>b.tc-a.tc);
+  const all=[...S.projects,...S.lines];
+  const bus=[...new Set(all.flatMap(p=>p.bus).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const LI=new Map(); S.lines.forEach(l=>{(LI.get(l.id)||LI.set(l.id,[]).get(l.id)).push(l);});
+  const sc=s=>{const l=(s||'').toLowerCase(); return l.includes('track')||l.includes('complet')?'var(--good)':l.includes('delay')?'var(--serious)':l.includes('risk')?'var(--critical)':l.includes('hold')?'var(--warning)':'var(--text-muted)';};
+  const uq=a=>[...new Set(a.filter(Boolean))];
+  const cellInfo=(p,b)=>{
+    const ls=(LI.get(p.id)||[]).filter(l=>l.bus.includes(b));
+    if(!ls.length && !p.bus.includes(b)) return null;
+    const linePM=uq(ls.flatMap(l=>l.pms)), projPM=p.pms, allPM=uq([...linePM,...projPM]);
+    const r=ls.length?ls[0]:p;
+    return {ls,linePM,projPM,allPM,r};
+  };
+  const grid=rows.map(p=>({p,cells:bus.map(b=>cellInfo(p,b))}));
+  const colN=bus.map((b,j)=>grid.filter(g=>g.cells[j]).length);
+  EXTRA_SHEETS.push(()=>({name:'Project x BU matrix',cols:[{label:'Project number',width:13},{label:'Project name',width:38,type:'wrap'},{label:'Client',width:26},...bus.map(b=>({label:b,width:24,type:'wrap'})),{label:'# BUs',width:8,type:'int'}],
+    rows:[...grid.map(g=>[g.p.id,g.p.name,g.p.client,...g.cells.map(c=>c?c.allPM.join(' / ')||'(no PM)':''),g.cells.filter(Boolean).length]),['','Projects per BU','',...colN,'']]}));
+  const head=`<thead><tr><th class="corner">Project</th>${bus.map(b=>`<th data-group="${esc(b)}" data-gdim="bu" title="Filter by ${esc(b)}">${esc(b.replace(/ BU$/,''))}</th>`).join('')}<th class="tot"># BUs</th></tr></thead>`;
+  const body=grid.map(({p,cells})=>`<tr><td class="pn" data-open="${esc(p.id+'|')}"><span class="n">${p.etcGap?'<span class="warn">⚠</span> ':''}${esc(p.name)}</span><span class="sub">${esc(p.id)} · ${esc(p.client||'—')}</span></td>`+
+    cells.map((c,j)=>{
+      if(!c) return '<td class="c"></td>';
+      const r=c.r, extra=c.linePM.length&&c.projPM.length&&c.linePM.join('|')!==c.projPM.join('|');
+      const t=`<div class="h">${esc(c.allPM.join(', ')||'(no PM assigned)')}</div>`+tipRows([
+        ['Project',esc(p.name)],['BU',esc(bus[j])],
+        ...(extra?[['BU-line PM',esc(c.linePM.join(', '))],['Project PM',esc(c.projPM.join(', ')||'—')]]:[]),
+        ['Contract',money(r.tc)],['Schedule',esc(r.sched||'—')],['Cost status',esc(r.costSt||'—')],['EAC margin',r.em!=null?pctF(r.em):'—']]);
+      return `<td class="c on" data-mx="${esc(p.id+'|'+bus[j])}" ${tipAttr(t)}><i style="background:${sc(r.sched)}"></i></td>`;
+    }).join('')+`<td class="tot">${cells.filter(Boolean).length}</td></tr>`).join('');
+  const foot=`<tfoot><tr><td class="pn">Projects per BU</td>${colN.map(n=>`<td>${n}</td>`).join('')}<td>${rows.length}</td></tr></tfoot>`;
+  return vhead('Project × BU matrix','One row per project, one column per BU. A block marks the BUs involved in the project; <b>hover</b> a block to see the PM(s). <span class="scr">Click a block to filter the app to that project and BU; click a BU header to filter by BU.</span>',
+      '<button class="btn small" data-csv-mx="1" onclick="exportMatrix()">⬇ Excel</button>')+
+    `<div class="card" style="padding:10px">${legend([['On track / completed','var(--good)'],['Delayed','var(--serious)'],['At risk','var(--critical)'],['On hold','var(--warning)'],['Other / n.a.','var(--text-muted)']])}
+    <p class="note" style="margin:0 0 8px">Block colour = schedule status (of the BU line when available, otherwise of the project). Shows all ${rows.length} projects matching the filters, regardless of the “Show” selector. “All PMs” = BU-line PMs plus project PMs.</p>
+    <div class="mxwrap"><table class="mx">${head}<tbody>${body}</tbody>${foot}</table></div></div>`;
+}
+function exportMatrix(){
+  const sh=EXTRA_SHEETS[0]&&EXTRA_SHEETS[0](); if(!sh){toast('Nothing to export');return;}
+  writeXlsx(uniqueNames([sh,infoSheet('Project x BU matrix')]),`Portfolio_Project_x_BU_matrix_${dfmt(S.reportDate)}.xlsx`); toast('Exported matrix to Excel');
+}
+
+/* =====================================================================
+   Insight views: PM workload, BU heatmap, margin bridge, BU timeline, concentration, data quality
+   ===================================================================== */
+/* records split by BU / PM (BU-line sheet when loaded; money split equally across multiple BUs/PMs on project rows) */
+function splitRecs(dim){
+  const L=S.lines.length, src=L?filtered(S.lines):filtered(S.projects);
+  return src.flatMap(p=>{ const ks=dim==='bu'?(p.bus.length?p.bus:['—']):(p.pms.length?p.pms:['—']);
+    const share=(dim==='bu'&&L)?1:ks.length; const keys=(dim==='bu'&&L)?[p.bu||ks[0]]:ks;
+    return keys.map(k=>({k,p,w:1/share})); });
+}
+function aggRecs(recs){
+  const G={};
+  recs.forEach(({k,p,w})=>{const g=G[k]||(G[k]={name:k,n:0,ids:new Set(),tc:0,eac:0,cc:0,revEtc:0,rev0:0,risk:0,issues:0,over:0,open:0,flags:0,cm:0,em:0,rev:new Array(36).fill(0),slipSum:0,slipN:0});
+    g.n++; g.ids.add(p.id); g.tc+=p.tc*w; g.eac+=p.eac*w; g.cc+=p.ccost*w; g.revEtc+=p.revEtc*w; g.rev0+=p.rev.yt[0]*w; g.risk+=(p.risk||0)*w;
+    if(/delay|risk|hold/i.test(p.sched)) g.issues++; if(/over/i.test(p.costSt)) g.over++; g.open+=p.openDecs.length*w; if(p.etcGap) g.flags++;
+    p.rev.m.forEach((v,i)=>g.rev[i]+=v*w);});
+  return Object.values(G).map(g=>Object.assign(g,{emPct:g.tc?(g.tc-g.eac)/g.tc:0,cmPct:g.tc?(g.tc-g.cc)/g.tc:0,emVal:g.tc-g.eac,ero:g.eac-g.cc,nProj:g.ids.size}));
+}
+const PALETTE=['var(--series-1)','var(--series-2)','var(--series-3)','var(--series-4)','var(--series-5)','var(--series-6)','#9b7fd1','#4fb3c8','#b0b8c8'];
+const spark=(a,w=110,h=26)=>{const mx=Math.max(1e-9,...a), n=a.length; const pts=a.map((v,i)=>`${(i/(n-1)*(w-2)+1).toFixed(1)},${(h-2-(v/mx)*(h-4)).toFixed(1)}`).join(' ');
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline fill="none" stroke="var(--series-1)" stroke-width="1.6" points="${pts}"/></svg>`;};
+
+/* ---------- 1. PM workload & exposure ---------- */
+function renderPMLoad(){
+  const groups=aggRecs(splitRecs('pm')), met=opt('lMet','risk');
+  const M={risk:['Risk score',g=>g.risk,v=>(+v).toFixed(1)],nProj:['# projects',g=>g.nProj,v=>v],tc:['Contract managed',g=>g.tc,money],revEtc:['Backlog',g=>g.revEtc,money],issues:['Delayed / at risk / on hold',g=>g.issues,v=>v],open:['Open decisions',g=>g.open,v=>(+v).toFixed(0)]}[met];
+  const sorted=[...groups].sort((a,b)=>M[1](b)-M[1](a)), top=S.topN?sorted.slice(0,S.topN):sorted;
+  const avgRisk=groups.length?groups.reduce((s,g)=>s+g.risk,0)/groups.length:0;
+  const items=top.map(g=>({label:g.name,value:M[1](g),id:'@pm:'+g.name,tip:`<div class="h">${esc(g.name)}</div>`+tipRows([['Projects',g.nProj],['BU lines / rows',g.n],['Contract',money(g.tc)],['Backlog',money(g.revEtc)],['Risk score',g.risk.toFixed(1)],['Delayed / at risk',g.issues],['Over budget',g.over],['Open decisions',g.open.toFixed(0)]])}));
+  EXTRA_SHEETS.push(()=>({name:'PM workload',cols:[{label:'PM',width:24},{label:'Projects',width:9,type:'int'},{label:'Rows',width:9,type:'int'},{label:'Contract',width:15,type:'eur'},{label:'Backlog',width:15,type:'eur'},{label:`${BASE_YEAR} revenue`,width:15,type:'eur'},{label:'EAC margin %',width:11,type:'pct'},{label:'Risk score',width:10,type:'dec1'},{label:'Delayed/at risk',width:10,type:'int'},{label:'Over budget',width:10,type:'int'},{label:'Open decisions',width:10,type:'int'},{label:'ETC=0 flags',width:10,type:'int'}],
+    rows:sorted.map(g=>[g.name,g.nProj,g.n,g.tc,g.revEtc,g.rev0,g.emPct,g.risk,g.issues,g.over,g.open,g.flags])}));
+  const rows=sorted;
+  return vhead('PM workload & exposure','Who carries what: projects, money, risk and open decisions per PM. '+(S.lines.length?'Values come from the BU-line sheet; on multi-PM lines they are split equally.':'On multi-PM projects values are split equally.')+' <span class="scr">Click a row or bar to filter the app to that PM.</span>',
+      seg('lMet',[['risk','Risk'],['nProj','Projects'],['tc','Contract'],['revEtc','Backlog'],['issues','Schedule issues'],['open','Open decisions']],'risk'))+
+    `<div class="card"><h3>By PM — ${esc(M[0])}</h3>${hbar(items,{fmt:M[2],labelW:200})}<p class="note">Portfolio average risk score per PM: ${avgRisk.toFixed(1)}.</p></div>`+
+    `<div class="card"><h3>Table <button class="btn small" style="float:right" data-csv="pml">⬇ Excel</button></h3>${table('pml',rows,[
+      {k:'name',label:'PM',get:g=>g.name},{k:'nProj',label:'Projects',get:g=>g.nProj,r:1},{k:'n',label:'Rows',get:g=>g.n,r:1},{k:'tc',label:'Contract',get:g=>g.tc,fmt:money,r:1},{k:'revEtc',label:'Backlog',get:g=>g.revEtc,fmt:money,r:1},
+      {k:'rev0',label:`${BASE_YEAR} revenue`,get:g=>g.rev0,fmt:money,r:1},{k:'emPct',label:'EAC margin %',get:g=>g.emPct,fmt:pctF,r:1},{k:'risk',label:'Risk score',get:g=>g.risk,fmt:v=>v.toFixed(1),r:1},{k:'issues',label:'Delayed / at risk',get:g=>g.issues,r:1},
+      {k:'over',label:'Over budget',get:g=>g.over,r:1},{k:'open',label:'Open decisions',get:g=>g.open,fmt:v=>v.toFixed(0),r:1},{k:'flags',label:'⚠ ETC=0',get:g=>g.flags,r:1},
+      {k:'sp',label:'Monthly revenue',get:g=>g.rev0,html:g=>spark(g.rev)}],{defSort:'risk',openKey:g=>'@pm:'+g.name})}</div>`;
+}
+
+/* ---------- 2. BU health heatmap ---------- */
+function renderBUHeat(){
+  const groups=aggRecs(splitRecs('bu')).sort((a,b)=>b.tc-a.tc);
+  const tot=groups.reduce((a,g)=>({n:a.n+g.n,risk:a.risk+g.risk}),{n:0,risk:0}), avgRiskPerRow=tot.n?tot.risk/tot.n:0;
+  const cls=(v,hi,lo,bad)=>v==null?'':(bad==='low'?(v<hi?'c':v<lo?'w':'g'):(v>hi?'c':v>lo?'w':'g'));
+  const cols=[
+    ['Contract',g=>g.tc,money,null],
+    ['EAC margin %',g=>g.emPct,pctF,g=>cls(g.emPct,.05,.10,'low')],
+    ['Erosion (pp)',g=>(g.cmPct-g.emPct)*100,pp,g=>cls((g.cmPct-g.emPct)*100,5,2)],
+    ['Delayed / at risk %',g=>g.n?g.issues/g.n:0,v=>pctF(v,0),g=>cls(g.n?g.issues/g.n:0,.30,.15)],
+    ['Over budget %',g=>g.n?g.over/g.n:0,v=>pctF(v,0),g=>cls(g.n?g.over/g.n:0,.30,.15)],
+    ['Avg risk / row',g=>g.n?g.risk/g.n:0,v=>v.toFixed(1),g=>cls(g.n?g.risk/g.n:0,avgRiskPerRow*1.5,avgRiskPerRow*1.1)],
+    ['Open decisions',g=>g.open,v=>v.toFixed(0),null],
+    ['⚠ ETC=0',g=>g.flags,v=>v,g=>g.flags>=3?'c':g.flags>0?'w':'g']];
+  EXTRA_SHEETS.push(()=>({name:'BU heatmap',cols:[{label:'BU',width:22},...cols.map(c=>({label:c[0],width:15,type:c[2]===money?'eur':c[2]===pctF?'pct':'dec1'}))],rows:groups.map(g=>[g.name,...cols.map(c=>c[1](g))])}));
+  const tipOf=g=>`<div class="h">${esc(g.name)}</div>`+tipRows([['Projects',g.nProj],['Rows',g.n],['Contract',money(g.tc)],['EAC margin',`${money(g.emVal)} (${pctF(g.emPct)})`],['Contract margin %',pctF(g.cmPct)]]);
+  return vhead('BU health heatmap','One row per BU. Cells are coloured against fixed thresholds. <span class="scr">Click a BU to filter the app to it.</span>')+
+    `<div class="card">${legend([['Healthy','rgba(12,163,12,.6)'],['Watch','rgba(250,178,25,.7)'],['Critical','rgba(208,59,59,.8)']])}
+    <div class="tbl-wrap"><table class="hm"><thead><tr><th>BU</th>${cols.map(c=>`<th>${esc(c[0])}</th>`).join('')}</tr></thead><tbody>${groups.map(g=>`<tr><td data-group="${esc(g.name)}" data-gdim="bu" ${tipAttr(tipOf(g))}>${esc(g.name)}</td>${cols.map(c=>`<td class="${c[3]?c[3](g):''}">${esc(c[2](c[1](g)))}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="9" class="note">No data.</td></tr>'}</tbody></table></div>
+    <p class="note">Thresholds — EAC margin %: critical &lt; 5%, watch &lt; 10%. Erosion: critical &gt; 5 pp, watch &gt; 2 pp. Delayed/at risk and over-budget share of rows: critical &gt; 30%, watch &gt; 15%. Avg risk per row: critical &gt; 1.5× and watch &gt; 1.1× the portfolio average (${avgRiskPerRow.toFixed(1)}). ETC=0 flags: watch ≥ 1, critical ≥ 3.</p></div>`;
+}
+
+/* ---------- 3. Margin bridge (waterfall) ---------- */
+function waterfall(steps,{h=300}={}){
+  const W0=900,padL=70,padR=16,top=24,bot=54; let cum=0; const bars=steps.map(s=>{ if(s.total){cum=s.v;return {...s,y0:0,y1:s.v,end:s.v};} const y0=cum; cum+=s.v; return {...s,y0,y1:cum,end:cum}; });
+  const all=bars.flatMap(b=>[b.y0,b.y1]), mn=Math.min(0,...all), mx=Math.max(0,...all), ticks=niceTicks(mn,mx,5), t0=ticks[0], t1=ticks[ticks.length-1];
+  const y=v=>top+(1-(v-t0)/(t1-t0||1))*(h-top-bot), bw=(W0-padL-padR)/bars.length, w=Math.min(70,bw-14);
+  let s=`<svg viewBox="0 0 ${W0} ${h}" width="100%" style="display:block">`;
+  for(const t of ticks) s+=`<line x1="${padL}" x2="${W0-padR}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)"/><text x="${padL-8}" y="${y(t)+4}" text-anchor="end" class="muted num">${esc(money(t,1))}</text>`;
+  bars.forEach((b,i)=>{ const x=padL+bw*i+(bw-w)/2, ya=y(Math.max(b.y0,b.y1)), yb=y(Math.min(b.y0,b.y1)), hh=Math.max(2,yb-ya);
+    const col=b.total?'var(--series-1)':(b.v<0?'var(--neg)':'var(--series-3)');
+    s+=`<rect x="${x}" y="${ya}" width="${w}" height="${hh}" rx="3" fill="${col}" ${tipAttr(`<div class="h">${esc(b.label)}</div>`+tipRows([[b.total?'Value':'Change',money(b.v)],['Running total',money(b.end)]]))}/>`;
+    s+=`<text x="${x+w/2}" y="${ya-5}" text-anchor="middle" class="num">${esc(money(b.v))}</text>`;
+    s+=`<text x="${x+w/2}" y="${h-bot+16}" text-anchor="middle" class="muted">${esc(b.label.length>16?b.label.slice(0,15)+'…':b.label)}</text>`;
+    if(i<bars.length-1) s+=`<line x1="${x+w}" x2="${x+bw}" y1="${y(b.end)}" y2="${y(b.end)}" stroke="var(--axis)" stroke-dasharray="3 3"/>`; });
+  return s+`<line x1="${padL}" x2="${W0-padR}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)" stroke-width="1.5"/></svg>`;
+}
+function renderBridge(){
+  const src=S.lines.length?filtered(S.lines):filtered(S.projects);
+  const sum=f=>src.reduce((a,p)=>a+(f(p)||0),0);
+  const cm=sum(p=>p.cmVal), em=sum(p=>p.emVal), catD=CATS.map(([k,l])=>({k,l,bud:sum(p=>p.bud[k]),eac:sum(p=>p.eacCat[k])}));
+  const steps=[{label:'Contract margin',v:cm,total:1}];
+  catD.forEach(c=>steps.push({label:c.l+(c.eac>c.bud?' overrun':c.eac<c.bud?' saving':''),v:-(c.eac-c.bud)}));
+  const resid=(em-cm)-steps.slice(1).reduce((a,s)=>a+s.v,0);
+  if(Math.abs(resid)>1) steps.push({label:'Unallocated',v:resid});
+  steps.push({label:'EAC margin',v:em,total:1});
+  EXTRA_SHEETS.push(()=>({name:'Margin bridge',cols:[{label:'Step',width:28},{label:'Value',width:16,type:'eur'}],rows:steps.map(s=>[s.label,s.v])}));
+  const groups=aggRecs(splitRecs('bu')).sort((a,b)=>b.ero-a.ero);
+  const catByBU={}; splitRecs('bu').forEach(({k,p,w})=>{const o=catByBU[k]||(catByBU[k]={});CATS.forEach(([c])=>o[c]=(o[c]||0)+(p.eacCat[c]-p.bud[c])*w);});
+  const note=S.filters.bu||S.filters.pm||S.filters.client?`Scoped by the current filters: ${esc(filterSummary())}.`:'Whole portfolio. Use the BU / PM / Client filters above to scope the bridge.';
+  return vhead('Margin bridge','From the budgeted contract margin to the forecast EAC margin, split by cost category. Red = cost growth vs budget, green = saving. '+note)+
+    `<div class="card"><h3>Contract margin → EAC margin<small>${S.lines.length?'BU lines':'projects'} in selection: ${src.length}</small></h3>${waterfall(steps)}
+      <p class="note">Category steps compare EAC (actual + ETC) with the budget per category. “Unallocated” is any difference between the category totals and the contract cost / EAC totals in the file.</p></div>`+
+    `<div class="card"><h3>Erosion by BU <button class="btn small" style="float:right" data-csv="brgbu">⬇ Excel</button></h3>${table('brgbu',groups,[
+      {k:'name',label:'BU',get:g=>g.name},{k:'tc',label:'Contract',get:g=>g.tc,fmt:money,r:1},{k:'cmv',label:'Contract margin',get:g=>g.tc-g.cc,fmt:money,r:1},
+      ...CATS.map(([c,l])=>({k:'c_'+c,label:l+' Δ',get:g=>-(catByBU[g.name]?.[c]||0),fmt:money,r:1})),
+      {k:'emVal',label:'EAC margin',get:g=>g.emVal,fmt:money,r:1},{k:'emPct',label:'EAC margin %',get:g=>g.emPct,fmt:pctF,r:1},{k:'ero',label:'Erosion',get:g=>g.ero,fmt:money,r:1}],{defSort:'ero',openKey:g=>'@bu:'+g.name})}</div>`;
+}
+
+/* ---------- 4. Revenue / cost / cash timeline by BU ---------- */
+function stacked(names,cols,data,{h=270}={}){
+  const W0=900,padL=64,padR=16,top=12,bot=28,n=36;
+  const pos=Array(n).fill(0),neg=Array(n).fill(0); data.forEach(a=>a.forEach((v,i)=>{if(v>=0)pos[i]+=v;else neg[i]+=v;}));
+  const ticks=niceTicks(Math.min(0,...neg),Math.max(0,...pos),5), t0=ticks[0], t1=ticks[ticks.length-1];
+  const y=v=>top+(1-(v-t0)/(t1-t0||1))*(h-top-bot), bw=(W0-padL-padR)/n;
+  let s=`<svg viewBox="0 0 ${W0} ${h}" width="100%" style="display:block">`;
+  for(const t of ticks) s+=`<line x1="${padL}" x2="${W0-padR}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)"/><text x="${padL-8}" y="${y(t)+4}" text-anchor="end" class="muted num">${esc(money(t,1))}</text>`;
+  for(let i=0;i<n;i++){
+    if(i%3===0) s+=`<text x="${padL+bw*i+bw/2}" y="${h-10}" text-anchor="middle" class="muted">${monthLabel(i)}</text>`;
+    if(i%12===0&&i) s+=`<line x1="${padL+bw*i}" x2="${padL+bw*i}" y1="${top}" y2="${h-bot}" stroke="var(--axis)" stroke-dasharray="3 3"/>`;
+    let pb=0,nb=0;
+    data.forEach((a,k)=>{const v=a[i]; if(!v) return; let ya,yb; if(v>=0){ya=y(pb+v);yb=y(pb);pb+=v;}else{ya=y(nb);yb=y(nb+v);nb+=v;}
+      s+=`<rect x="${padL+bw*i+1}" y="${ya}" width="${Math.max(2,bw-2)}" height="${Math.max(.5,yb-ya)}" fill="${cols[k]}"/>`;});
+    const tot=data.reduce((a,x)=>a+x[i],0);
+    s+=`<rect class="hit" x="${padL+bw*i}" y="${top}" width="${bw}" height="${h-top-bot}" ${tipAttr(`<div class="h">${monthLabel(i)}</div>`+tipRows([...names.map((nm,k)=>[nm,money(data[k][i])]).filter((r,k)=>data[k][i]),['Total',money(tot)]]))}/>`;
+  }
+  return s+`<line x1="${padL}" x2="${W0-padR}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)" stroke-width="1.5"/></svg>`;
+}
+function renderBUTime(){
+  const mt=opt('tMet','rev');
+  const MET={rev:['Revenue',p=>p.rev.m],cost:['Cost',p=>p.cost.m],cin:['Cash in',p=>p.cin.m],cout:['Cash out',p=>p.cout.m],net:['Net cash',p=>p.net]}[mt];
+  const B={}; splitRecs('bu').forEach(({k,p,w})=>{const a=B[k]||(B[k]=new Array(36).fill(0)); MET[1](p).forEach((v,i)=>a[i]+=v*w);});
+  let ents=Object.entries(B).map(([name,a])=>({name,a,tot:a.reduce((x,y)=>x+y,0)})).sort((x,y)=>Math.abs(y.tot)-Math.abs(x.tot));
+  if(ents.length>8){const rest=ents.slice(8), a=new Array(36).fill(0); rest.forEach(e=>e.a.forEach((v,i)=>a[i]+=v)); ents=[...ents.slice(0,8),{name:'Other BUs',a,tot:a.reduce((x,y)=>x+y,0)}];}
+  const names=ents.map(e=>e.name), cols=ents.map((e,i)=>PALETTE[i%PALETTE.length]);
+  const yr=a=>[0,1,2].map(k=>a.slice(k*12,k*12+12).reduce((x,y)=>x+y,0));
+  const rows=ents.map(e=>{const y=yr(e.a);return {name:e.name,y0:y[0],y1:y[1],y2:y[2],tot:e.tot};});
+  EXTRA_SHEETS.push(()=>({name:('BU monthly '+MET[0]).slice(0,31),cols:[{label:'Month',width:10},...names.map(n=>({label:n,width:15,type:'eur'})),{label:'Total',width:15,type:'eur'}],rows:Array.from({length:36},(_,i)=>[monthLabel(i),...ents.map(e=>e.a[i]),ents.reduce((x,e)=>x+e.a[i],0)])}));
+  return vhead('Timeline by BU','Monthly forecast stacked by BU (BU-line sheet when loaded). Hover a month for the BU split.',seg('tMet',[['rev','Revenue'],['cost','Cost'],['cin','Cash in'],['cout','Cash out'],['net','Net cash']],'rev'))+
+    `<div class="card"><h3>${esc(MET[0])} by BU, ${monthLabel(0)} – ${monthLabel(35)}</h3>${legend(names.map((n,i)=>[n,cols[i]]))}${stacked(names,cols,ents.map(e=>e.a))}</div>`+
+    `<div class="card"><h3>Yearly totals <button class="btn small" style="float:right" data-csv="butl">⬇ Excel</button></h3>${table('butl',rows,[{k:'name',label:'BU',get:r=>r.name},{k:'y0',label:String(BASE_YEAR),get:r=>r.y0,fmt:money,r:1},{k:'y1',label:String(BASE_YEAR+1),get:r=>r.y1,fmt:money,r:1},{k:'y2',label:String(BASE_YEAR+2),get:r=>r.y2,fmt:money,r:1},{k:'tot',label:'Total',get:r=>r.tot,fmt:money,r:1}],{defSort:'tot',rank:false,openKey:r=>r.name==='Other BUs'?'':'@bu:'+r.name})}</div>`;
+}
+
+/* ---------- 5. Concentration ---------- */
+const CONC_LIMIT=0.20;
+function renderConc(){
+  const dim=opt('xDim','client'), mt=opt('xMet','revEtc');
+  const MET={revEtc:['Backlog',p=>p.revEtc],tc:['Total contract',p=>p.tc],rev0:[`${BASE_YEAR} revenue`,p=>p.rev.yt[0]]}[mt];
+  const recs=dim==='client'?filtered(S.projects).map(p=>({k:p.client||'—',p,w:1})):splitRecs(dim);
+  const G={}; recs.forEach(({k,p,w})=>{const g=G[k]||(G[k]={name:k,v:0,ids:new Set()});g.v+=MET[1](p)*w;g.ids.add(p.id);});
+  let arr=Object.values(G).filter(g=>g.v>0).sort((a,b)=>b.v-a.v); const total=arr.reduce((s,g)=>s+g.v,0)||1;
+  arr.forEach(g=>{g.share=g.v/total;g.n=g.ids.size;g.flag=g.share>CONC_LIMIT;});
+  const top3=arr.slice(0,3).reduce((s,g)=>s+g.share,0), hhi=arr.reduce((s,g)=>s+g.share*g.share,0)*10000, nFlag=arr.filter(g=>g.flag).length;
+  const k=(l,v,s)=>`<div class="kpi"><div class="l">${l}</div><div class="v num">${v}</div><div class="s">${s||''}</div></div>`;
+  const shown=S.topN?arr.slice(0,S.topN):arr;
+  const items=shown.map(g=>({label:g.name,value:g.share,id:'@'+dim+':'+g.name,color:g.flag?'var(--serious)':'var(--series-1)',tip:`<div class="h">${esc(g.name)}</div>`+tipRows([[MET[0],money(g.v)],['Share',pctF(g.share)],['Projects',g.n]])}));
+  EXTRA_SHEETS.push(()=>({name:'Concentration',cols:[{label:dim.toUpperCase(),width:30},{label:MET[0],width:16,type:'eur'},{label:'Share',width:10,type:'pct'},{label:'Projects',width:10,type:'int'},{label:'Over 20%',width:10}],rows:arr.map(g=>[g.name,g.v,g.share,g.n,g.flag?'yes':''])}));
+  return vhead('Concentration & dependency',`Share of ${MET[0].toLowerCase()} by ${dim.toUpperCase()}. Groups above ${pctF(CONC_LIMIT,0)} are flagged ⚠. <span class="scr">Click a bar or row to filter the app.</span>`,
+      seg('xDim',[['client','Client'],['bu','BU'],['pm','PM']],'client')+seg('xMet',[['revEtc','Backlog'],['tc','Contract'],['rev0',`${BASE_YEAR} revenue`]],'revEtc'))+
+    `<div class="kpis">${k('Largest share',arr[0]?pctF(arr[0].share):'—',arr[0]?esc(arr[0].name):'')}${k('Top 3 combined',pctF(top3))}${k(`Groups > ${pctF(CONC_LIMIT,0)}`,nFlag,nFlag?'⚠ concentration risk':'none')}${k('HHI',hhi.toFixed(0),hhi>2500?'highly concentrated':hhi>1500?'moderately concentrated':'diversified')}</div>`+
+    `<div class="card"><h3>${dim.toUpperCase()} share of ${esc(MET[0].toLowerCase())}</h3>${hbar(items,{fmt:v=>pctF(v,1),labelW:230})}</div>`+
+    `<div class="card"><h3>Table <button class="btn small" style="float:right" data-csv="conc">⬇ Excel</button></h3>${table('conc',arr,[
+      {k:'name',label:dim.toUpperCase(),get:g=>g.name,html:g=>(g.flag?'<span class="warn">⚠</span> ':'')+esc(g.name)},{k:'v',label:MET[0],get:g=>g.v,fmt:money,r:1},{k:'share',label:'Share',get:g=>g.share,fmt:pctF,r:1},{k:'n',label:'# projects',get:g=>g.n,r:1}],{defSort:'v',openKey:g=>'@'+dim+':'+g.name})}</div>`;
+}
+
+/* ---------- 6. Data quality ---------- */
+function dqIssues(){
+  const out=[]; const ps=filtered(S.projects), L=S.lines;
+  const add=(check,sev,p,detail)=>out.push({check,sev,p,detail});
+  const done=p=>/complet/i.test(p.sched);
+  ps.forEach(p=>{
+    if(p.etcGap) add('ETC = 0 on open project','hi',p,p.etcGap.replace(/^ETC = 0 but project not completed: /,''));
+    if(!p.pm) add('Missing PM','hi',p,'No PM assigned.');
+    if(!p.bus.length) add('Missing BU','hi',p,'No BU assigned.');
+    if(!p.client) add('Missing client','lo',p,'Client is empty.');
+    if(p.tc<=0) add('Zero / negative contract','hi',p,`Total contract = ${money(p.tc)}.`);
+    if(p.tc>0 && (p.em<-0.5||p.em>0.8)) add('EAC margin out of range','md',p,`EAC margin ${pctF(p.em)} looks implausible.`);
+    if(p.dSign&&p.dFcst&&p.dFcst<p.dSign) add('Dates inconsistent','md',p,`Forecast completion ${dfmt(p.dFcst)} is before signing ${dfmt(p.dSign)}.`);
+    if(!p.dFcst&&!done(p)) add('Missing forecast completion','md',p,'No forecasted final completion date.');
+    if(/track/i.test(p.sched)&&p.slip>30) add('Status vs dates','md',p,`Marked on track but forecast completion is ${p.slip} days after the contract date.`);
+    if(done(p)&&(p.revEtc>0||p.etcTot>0)) add('Completed with remaining values','md',p,`Completed, but backlog ${money(p.revEtc)} / ETC ${money(p.etcTot)} remain.`);
+    if(/on budget/i.test(p.costSt)&&p.ccost>0&&p.eac>1.05*p.ccost) add('Cost status vs numbers','md',p,`Marked on budget but EAC is ${pctF(p.eac/p.ccost-1,0)} above budget.`);
+    if(L.length){
+      const ls=L.filter(l=>l.id===p.id);
+      if(!ls.length) add('No BU line for project','md',p,'Project has no row in the BU-line sheet.');
+      else{
+        p.bus.filter(b=>!ls.some(l=>l.bus.includes(b))).forEach(b=>add('BU without BU line','md',p,`${b} is listed on the project but has no BU line.`));
+        ls.filter(l=>!p.bus.includes(l.bu)).forEach(l=>add('BU line not on project','lo',p,`BU line ${l.bu} is not in the project's BU list.`));
+        [['Total contract','tc'],['EAC','eac'],['Backlog','revEtc']].forEach(([lab,k])=>{const sm=ls.reduce((a,l)=>a+(l[k]||0),0), d=sm-(p[k]||0);
+          if(Math.abs(d)>Math.max(1000,0.01*Math.abs(p[k]||0))) add('Project ≠ sum of BU lines','hi',p,`${lab}: project ${money(p[k])} vs BU lines ${money(sm)} (diff ${money(d)}).`);});
+      }
+    }
+  });
+  return out;
+}
+const SEV={hi:['High',3],md:['Medium',2],lo:['Low',1]};
+function renderDQ(){
+  const all=dqIssues(), chk=opt('qChk','');
+  const byCheck={}; all.forEach(i=>{const c=byCheck[i.check]||(byCheck[i.check]={check:i.check,sev:i.sev,n:0,ids:new Set()});c.n++;c.ids.add(i.p.id);});
+  const summ=Object.values(byCheck).sort((a,b)=>SEV[b.sev][1]-SEV[a.sev][1]||b.n-a.n);
+  const rows=(chk?all.filter(i=>i.check===chk):all).map(i=>({...i,sevN:SEV[i.sev][1]}));
+  const nProj=new Set(all.map(i=>i.p.id)).size, nTot=filtered(S.projects).length;
+  const checksRun=22;
+  EXTRA_SHEETS.push(()=>({name:'Data quality',cols:[{label:'Check',width:32},{label:'Severity',width:10},{label:'Project number',width:13},{label:'Project',width:38,type:'wrap'},{label:'PM',width:22},{label:'BU',width:20},{label:'Detail',width:70,type:'wrap'}],rows:all.map(i=>[i.check,SEV[i.sev][0],i.p.id,i.p.name,i.p.pm,i.p.bu,i.detail])}));
+  const k=(l,v,s)=>`<div class="kpi"><div class="l">${l}</div><div class="v num">${v}</div><div class="s">${s||''}</div></div>`;
+  return vhead('Data quality','All the automatic checks on the loaded file in one place. <span class="scr">Click a check to list only its findings; click a row to open the project.</span>',
+      chk?`<button class="btn small" data-optset="qChk" data-v="">Show all checks</button>`:'')+
+    `<div class="kpis">${k('Findings',all.length,`${summ.length} different checks triggered`)}${k('Projects affected',nProj,`of ${nTot} in selection`)}${k('High severity',all.filter(i=>i.sev==='hi').length)}${k('Clean projects',nTot-nProj,pctF(nTot?(nTot-nProj)/nTot:1,0))}</div>`+
+    `<div class="card"><h3>Checks triggered</h3>${summ.length?`<div class="tbl-wrap"><table class="t"><thead><tr><th>Check</th><th>Severity</th><th class="r">Findings</th><th class="r">Projects</th></tr></thead><tbody>${summ.map(c=>`<tr data-optset="qChk" data-v="${esc(c.check)}" ${c.check===chk?'style="background:var(--accent-soft)"':''}><td>${esc(c.check)}</td><td><span class="sevchip ${c.sev}">${SEV[c.sev][0]}</span></td><td class="r num">${c.n}</td><td class="r num">${c.ids.size}</td></tr>`).join('')}</tbody></table></div>`:'<div class="note">✓ No issues found for the current selection.</div>'}</div>`+
+    `<div class="card"><h3>Findings${chk?` — ${esc(chk)}`:''} <button class="btn small" style="float:right" data-csv="dq">⬇ Excel</button></h3>${table('dq',rows,[
+      {k:'check',label:'Check',get:r=>r.check},{k:'sevN',label:'Severity',get:r=>r.sevN,html:r=>`<span class="sevchip ${r.sev}">${SEV[r.sev][0]}</span>`},
+      {k:'pname',label:'Project',get:r=>r.p.name,cls:'name',html:r=>`<div class="n">${esc(r.p.name)}</div><div class="sub">${esc(r.p.id)}</div>`},{k:'pm',label:'PM',get:r=>r.p.pm},{k:'bu',label:'BU',get:r=>r.p.bu},{k:'detail',label:'Detail',get:r=>r.detail,cls:'wrap'}],
+      {defSort:'sevN',openKey:r=>r.p.id+'|'})}</div>`;
+}
+
 /* ---------- settings ---------- */
 /* ---------- actual vs budget ---------- */
 function renderBudget(){
@@ -1199,6 +1487,13 @@ const PACK=[
   ['cash','Backlog & cash',()=>sec('cash',{cashB:'backlog'}),1],
   ['schedule','Schedule: slip & delayed projects',()=>sec('schedule',{sB:'slip'})+'<div style="height:10px"></div>'+sec('schedule',{sB:'issues'}),1],
   ['bu','Results by BU',()=>sec('groups',{gDim:'bu',gMet:'tc'}),0],
+  ['matrix','Project × BU matrix',()=>sec('matrix',{}),0],
+  ['bridge','Margin bridge',()=>sec('bridge',{}),0],
+  ['pmload','PM workload & exposure',()=>sec('pmload',{lMet:'risk'}),0],
+  ['buheat','BU health heatmap',()=>sec('buheat',{}),0],
+  ['butime','Timeline by BU (revenue)',()=>sec('butime',{tMet:'rev'}),0],
+  ['conc','Concentration (client backlog)',()=>sec('conc',{xDim:'client',xMet:'revEtc'}),0],
+  ['dq','Data quality',()=>sec('dq',{}),0],
   ['pm','Results by PM',()=>sec('groups',{gDim:'pm',gMet:'emVal'}),0],
   ['decisions','Open decisions & critical issues',()=>sec('decisions',{dSt:'open'}),1],
   ['flagged','⚠ Data check: ETC = 0 projects',flaggedSection,1],
@@ -1416,6 +1711,8 @@ document.addEventListener('click',e=>{
   if(t.closest('[data-xlsx]')){exportFlagged();return;}
   if(t.closest('#dqKpi')){S.filters.dq='flag';S.view='margin';toast('Showing only projects flagged ⚠ ETC = 0');render();return;}
   if(t.id==='resetW'){W=Object.assign({},DEFAULT_W);try{localStorage.removeItem('ppv_weights');}catch(_){}recompute();render();return;}
+  const os=t.closest('[data-optset]'); if(os){S.opts[os.dataset.optset]=os.dataset.v;render();return;}
+  const mx=t.closest('[data-mx]'); if(mx){const [id,bu]=mx.dataset.mx.split('|');S.filters.bu=bu;S.filters.q=id;S.view='overview';toast(`Filtered to ${id} · ${bu}`);scrollTo(0,0);render();return;}
   const gp=t.closest('[data-group]'); if(gp){applyGroup(gp.dataset.gdim||opt('gDim','pm'),gp.dataset.group);return;}
   const op=t.closest('[data-open]');
   if(op&&op.dataset.open){const k=op.dataset.open; if(k.startsWith('@')){const [dim,...n]=k.slice(1).split(':');applyGroup(dim,n.join(':'));} else openProject(k);}
