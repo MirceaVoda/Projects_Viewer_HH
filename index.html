@@ -265,6 +265,19 @@ table.hm tbody tr:hover td:first-child{color:var(--accent)}
 .fchip b{color:var(--text-primary)} .fchip.bad{border-color:var(--serious);color:#ffb08f} .fchip.ok{border-color:var(--good)}
 .att{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
 h4.mh{margin:12px 0 4px;font-size:13px;color:var(--text-secondary)}
+
+/* ---------- risks & decisions per project ---------- */
+.rdcard{cursor:pointer;break-inside:avoid;page-break-inside:avoid}
+.rdcard:hover{border-color:var(--accent)}
+.rdh{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:10px}
+.rdh .t{font-size:15px;font-weight:650} .rdh .s{color:var(--text-muted);font-size:12px}
+.rdh .sp{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.rdgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:900px){.rdgrid{grid-template-columns:1fr}}
+.rdgrid h4{margin:0 0 6px;font-size:12.5px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em}
+.rdgrid ul{margin:0 0 8px;padding-left:18px} .rdgrid li{margin:3px 0;line-height:1.4}
+.rdgrid .dec-item.closed{border-left-color:var(--good);opacity:.8}
+.rdgrid .dec-item .m{color:var(--text-muted);font-size:11.5px;margin-top:3px}
 </style>
 </head>
 <body>
@@ -940,6 +953,7 @@ const VIEWS=[
  {id:'costprog',ico:'⧗',label:'Cost overrun & progress',render:renderCostProg},
  {id:'schedule',ico:'◷',label:'Schedule / completion',render:renderSchedule},
  {id:'decisions',ico:'☑',label:'Decisions & issues',render:renderDecisions},
+ {id:'riskdec',ico:'☰',label:'Risks & decisions per project',render:renderRiskDec},
  {id:'groups',ico:'☷',label:'By PM / BU / Client',render:renderGroups},
  {id:'matrix',ico:'▦',label:'Project × BU matrix',render:renderMatrix},
  {id:'pmload',ico:'☺',label:'PM workload',render:renderPMLoad},
@@ -1471,6 +1485,40 @@ function renderMeetings(){
     shown.map((F,i)=>forumCard(F,forums.indexOf(F),P)).join('')+pmCard+rules;
 }
 
+/* ---------- risks & decisions per project ---------- */
+function renderRiskDec(){
+  const sort=opt('rdSort','risk'), dsel=opt('rdDec','open'), scope=opt('rdScope','all');
+  const isOpen=d=>!/closed|resolved|done/i.test(d.status||'');
+  const decsOf=p=>p.decs.filter(d=>dsel==='all'||isOpen(d));
+  let rows=filtered(S.projects).map(p=>({p,decs:decsOf(p)}));
+  if(scope==='with') rows=rows.filter(r=>r.p.risks.length||r.decs.length);
+  const key={risk:r=>-(r.p.risk||0),tc:r=>-r.p.tc,name:r=>r.p.name}[sort];
+  rows.sort((a,b)=>sort==='name'?key(a).localeCompare(key(b)):key(a)-key(b));
+  const total=rows.length, shown=S.topN?rows.slice(0,S.topN):rows;
+  EXTRA_SHEETS.push(()=>({name:'Risks & decisions',cols:[{label:'Project number',width:13},{label:'Project name',width:38,type:'wrap'},{label:'PM',width:22},{label:'BU',width:20},{label:'Risk score',width:9,type:'dec1'},{label:'Item',width:14},{label:'Detail',width:70,type:'wrap'},{label:'Type',width:14},{label:'Status',width:12},{label:'Assigned to',width:18},{label:'BU (decision)',width:14},{label:'Date',width:12},{label:'Resolution',width:40,type:'wrap'}],
+    rows:rows.flatMap(({p,decs})=>{const base=[p.id,p.name,p.pm,p.bu,p.risk||0]; const o=[];
+      p.risks.forEach(r=>o.push([...base,'Stated risk',r,'','','','','','']));
+      if(p.riskParts.length) o.push([...base,'Score drivers',p.riskParts.map(([l,v])=>`${l} (+${v.toFixed(1)})`).join('; '),'','','','','','']);
+      decs.forEach(d=>o.push([...base,'Decision',d.desc,d.type,d.status,d.to,d.bu,d.date,d.res]));
+      if(!o.length) o.push([...base,'None','No stated risks or decisions','','','','','','']); return o;})}));
+  const card=({p,decs})=>{
+    const allDec=p.decs, nOpen=allDec.filter(isOpen).length;
+    const risks=p.risks.length?`<ul>${p.risks.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`:'<div class="note">No stated risks.</div>';
+    const kw=p.kw.length?`<div style="margin:4px 0">${p.kw.map(k=>`<span class="pill">${esc(k)}</span>`).join(' ')}</div>`:'';
+    const drivers=p.riskParts.length?`<div style="margin-top:6px"><span class="note">Score drivers: </span>${p.riskParts.map(([l,v])=>`<span class="pill">${esc(l)} +${v.toFixed(1)}</span>`).join(' ')}</div>`:'';
+    const dh=decs.length?decs.map(d=>{const op=isOpen(d); return `<div class="dec-item ${op?'':'closed'}"><div>${statusChip(d.type,'type')} ${statusChip(d.status,'dec')} <span class="note">#${esc(d.no||'')}</span></div><div style="margin-top:4px">${esc(d.desc||'—')}</div>${!op&&d.res?`<div class="m"><b>Resolution:</b> ${esc(d.res)}</div>`:''}<div class="m">${d.to?'Assigned to <b>'+esc(d.to)+'</b>':'Unassigned'}${d.bu?' · '+esc(d.bu):''}${d.date?' · '+esc(d.date):''}</div></div>`;}).join(''):`<div class="note">${dsel==='all'?'No decisions logged.':'No open decisions.'}</div>`;
+    return `<div class="card rdcard" data-open="${esc(p.id+'|')}"><div class="rdh"><div><div class="t">${p.etcGap?'<span class="warn">⚠</span> ':''}${esc(p.name)}</div><div class="s">${esc(p.id)} · ${esc(p.client||'—')} · PM: ${esc(p.pm||'—')} · ${p.bus.map(b=>esc(b.replace(/ BU$/,''))).join(' + ')||'—'}</div></div>
+      <div class="sp">${statusChip(p.sched,'sched')}${statusChip(p.costSt,'cost')}<span class="pill" title="Risk score">Score ${(p.risk||0).toFixed(1)}</span><span class="pill">${money(p.tc)}</span></div></div>
+      <div class="rdgrid"><div><h4>Risks (${p.risks.length})</h4>${risks}${kw}${drivers}</div><div><h4>Decisions &amp; issues — ${nOpen} open / ${allDec.length} total</h4>${dh}</div></div></div>`;
+  };
+  const kp=(l,v,sub)=>`<div class="kpi"><div class="l">${l}</div><div class="v num">${v}</div><div class="s">${sub||''}</div></div>`;
+  const nRisk=rows.reduce((a,r)=>a+r.p.risks.length,0), nDec=rows.reduce((a,r)=>a+r.decs.length,0), nCrit=rows.reduce((a,r)=>a+r.decs.filter(d=>/critical/i.test(d.type)&&isOpen(d)).length,0);
+  return vhead('Risks & decisions per project','Stated risks, risk-score drivers and decisions for every project, in one card each. <span class="scr">Click a card to open the project.</span>',
+      seg('rdSort',[['risk','By risk score'],['tc','By contract'],['name','By name']],'risk')+seg('rdDec',[['open','Open decisions'],['all','All decisions']],'open')+seg('rdScope',[['all','All projects'],['with','With risks / decisions']],'all'))+
+    `<div class="kpis">${kp('Projects',total,total>shown.length?`showing ${shown.length} — set “Show” to All to list every project`:'all listed')}${kp('Stated risks',nRisk)}${kp(dsel==='all'?'Decisions (all)':'Open decisions',nDec)}${kp('Open critical issues',nCrit,nCrit?'⚠ need escalation':'none')}</div>`+
+    (shown.map(card).join('')||'<div class="card note">No projects match the current filters.</div>');
+}
+
 /* ---------- settings ---------- */
 /* ---------- actual vs budget ---------- */
 function renderBudget(){
@@ -1620,6 +1668,7 @@ const PACK=[
   ['butime','Timeline by BU (revenue)',()=>sec('butime',{tMet:'rev'}),0],
   ['conc','Concentration (client backlog)',()=>sec('conc',{xDim:'client',xMet:'revEtc'}),0],
   ['dq','Data quality',()=>sec('dq',{}),0],
+  ['riskdec','Risks & decisions per project',()=>sec('riskdec',{}),0],
   ['meetings','Meeting plan (BU / inter-BU / management)',()=>sec('meetings',{}),0],
   ['pm','Results by PM',()=>sec('groups',{gDim:'pm',gMet:'emVal'}),0],
   ['decisions','Open decisions & critical issues',()=>sec('decisions',{dSt:'open'}),1],
